@@ -1082,16 +1082,16 @@ html, body {
   .roadmap-cols { grid-template-columns: repeat(2, 1fr); height: auto; min-height: calc(100vh - 140px); }
   .dash-layout { grid-template-columns: 1fr; }
   .health-sidebar {
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: 4px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 6px;
     position: static;
     padding-bottom: 16px;
     border-bottom: 1px solid color-mix(in srgb, var(--border) 8%, transparent);
     margin-bottom: 8px;
   }
-  .health-sidebar-title { width: 100%; padding: 0 0 6px; }
-  .health-row { padding: 4px 10px; border-radius: 20px; background: color-mix(in srgb, var(--text) 3%, transparent); }
+  .health-sidebar-title { grid-column: 1 / -1; padding: 0 0 6px; }
+  .health-row { padding: 6px 10px; border-radius: 8px; background: color-mix(in srgb, var(--text) 3%, transparent); }
   .detail-panel { width: 400px; }
 }
 
@@ -1151,33 +1151,34 @@ html, body {
   .page-subtitle { font-size: 12px; margin-bottom: 16px; }
 
   /* Dashboard */
-  .dash-layout { grid-template-columns: 1fr; gap: 16px; overflow: hidden; }
+  .dash-layout { grid-template-columns: 1fr; gap: 16px; max-width: 100%; }
   .health-sidebar {
-    flex-direction: row;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(110px, 45%), 1fr));
     gap: 6px;
     position: static;
-    padding-bottom: 12px;
+    padding: 0 0 14px;
     border-bottom: 1px solid color-mix(in srgb, var(--border) 8%, transparent);
-    overflow: hidden;
+    margin-bottom: 4px;
   }
-  .health-sidebar-title { width: 100%; padding: 0 0 6px; }
+  .health-sidebar-title { grid-column: 1 / -1; padding: 0 0 4px; }
   .health-row {
-    padding: 5px 10px;
-    border-radius: 20px;
+    padding: 7px 10px;
+    border-radius: 8px;
     background: color-mix(in srgb, var(--text) 3%, transparent);
-    flex-shrink: 1;
     min-width: 0;
   }
   .health-row-label { font-size: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 16px; }
-  .stat-card { padding: 16px 14px; }
-  .stat-value { font-size: 24px; }
-  .stat-label { font-size: 9px; }
-  .stat-sub { font-size: 10px; }
+  .health-dot { width: 6px; height: 6px; }
+  .stats-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px; }
+  .stat-card { padding: 12px 10px; text-align: center; }
+  .stat-value { font-size: 22px; }
+  .stat-label { font-size: 8px; letter-spacing: 0.05em; }
+  .stat-sub { display: none; }
 
   /* Dashboard recent panels — stack vertically */
   .dash-two-col { grid-template-columns: 1fr; gap: 16px; }
+  .dash-two-col .card { max-height: 260px; overflow-y: auto; }
   .detail-fields-grid { grid-template-columns: 1fr; }
 
   /* Tracker */
@@ -1257,7 +1258,8 @@ html, body {
 
 /* --- Responsive: Small phones (≤ 380px) --- */
 @media (max-width: 380px) {
-  .stats-grid { grid-template-columns: 1fr; }
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .health-sidebar { grid-template-columns: repeat(auto-fill, minmax(min(100px, 44%), 1fr)); }
   .health-row-label { font-size: 9px; }
   .badge { font-size: 9px; padding: 2px 6px; }
   .tracker-filter { font-size: 9px; }

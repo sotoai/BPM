@@ -1529,11 +1529,11 @@ function getSubareas(areaKey) { return APP_AREAS[areaKey]?.subareas || []; }
 
 function getAreaHealth(areaKey) {
   const areaTickets = DATA.tickets.filter(t => t.area === areaKey && t.status !== "done");
-  const critBugs = areaTickets.filter(t => t.type === "bug" && t.priority === "critical").length;
-  const highBugs = areaTickets.filter(t => t.type === "bug" && t.priority === "high").length;
+  const criticalAll = areaTickets.filter(t => t.priority === "critical").length;
+  const highAll = areaTickets.filter(t => t.priority === "high").length;
   const openCount = areaTickets.length;
-  if (critBugs > 0) return { level: "outage", label: `${critBugs} critical`, countClass: "hc-crit", count: openCount };
-  if (highBugs > 0) return { level: "degraded", label: `${highBugs} high-priority`, countClass: "hc-warn", count: openCount };
+  if (criticalAll > 0) return { level: "outage", label: `${criticalAll} critical`, countClass: "hc-crit", count: openCount };
+  if (highAll > 0) return { level: "degraded", label: `${highAll} high-priority`, countClass: "hc-warn", count: openCount };
   if (openCount > 0) return { level: "healthy", label: `${openCount} open`, countClass: "hc-ok", count: openCount };
   return { level: "healthy", label: "No issues", countClass: "hc-ok", count: 0 };
 }

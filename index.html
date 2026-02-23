@@ -833,6 +833,89 @@ html, body {
 
 .tracker-view-btn svg { width: 16px; height: 16px; }
 
+/* --- Netflix Hero Banner --- */
+.nf-hero-banner {
+  position: relative;
+  width: 100%;
+  height: 280px;
+  border-radius: 14px;
+  overflow: hidden;
+  cursor: pointer;
+  background: var(--panel2);
+  margin-bottom: 8px;
+}
+.nf-hero-banner:hover .nf-hero-img { transform: scale(1.02); }
+.nf-hero-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 600ms ease;
+}
+.nf-hero-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--focus) 12%, transparent), color-mix(in srgb, var(--text) 6%, transparent));
+  color: var(--muted);
+}
+.nf-hero-placeholder svg { width: 56px; height: 56px; opacity: 0.25; }
+.nf-hero-gradient {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 70%;
+  background: linear-gradient(to bottom, transparent 0%, color-mix(in srgb, var(--bg) 70%, transparent) 50%, var(--bg) 100%);
+  pointer-events: none;
+}
+.nf-hero-info {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.nf-hero-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--focus);
+}
+.nf-hero-title {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1.2;
+  text-shadow: 0 1px 6px rgba(0,0,0,0.15);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.nf-hero-desc {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  max-width: 500px;
+}
+.nf-hero-badges {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
 /* --- Netflix Shelf Feed --- */
 .nf-feed {
   display: flex;
@@ -1602,6 +1685,9 @@ html, body {
   .detail-panel { width: 400px; }
 
   /* Netflix tracker — tablet */
+  .nf-hero-banner { height: 220px; }
+  .nf-hero-title { font-size: 18px; }
+  .nf-hero-info { padding: 16px 18px; }
   .nf-shelf-hero .nf-card { width: 200px; }
   .nf-shelf-hero .nf-card-image,
   .nf-shelf-hero .nf-card-placeholder { height: 150px; }
@@ -1814,6 +1900,10 @@ html, body {
   .btn-icon svg { width: 18px; height: 18px; }
 
   /* Netflix tracker — mobile */
+  .nf-hero-banner { height: 180px; }
+  .nf-hero-title { font-size: 16px; }
+  .nf-hero-desc { display: none; }
+  .nf-hero-info { padding: 14px 16px; gap: 6px; }
   .nf-shelf-hero .nf-card { width: 160px; }
   .nf-shelf-hero .nf-card-image,
   .nf-shelf-hero .nf-card-placeholder { height: 120px; }
@@ -1834,6 +1924,10 @@ html, body {
   .tracker-filter { font-size: 9px; }
 
   /* Netflix tracker — small phones */
+  .nf-hero-banner { height: 150px; border-radius: 10px; }
+  .nf-hero-title { font-size: 14px; }
+  .nf-hero-info { padding: 10px 12px; gap: 5px; }
+  .nf-hero-label { font-size: 9px; }
   .nf-shelf-hero .nf-card { width: 140px; }
   .nf-shelf-hero .nf-card-image,
   .nf-shelf-hero .nf-card-placeholder { height: 90px; }
@@ -2672,16 +2766,29 @@ function getNetflixShelves(tickets) {
   const pw = { critical: 0, high: 1, medium: 2, low: 3 };
   const byPriorityDate = (a, b) => pw[a.priority] - pw[b.priority] || (b.createdAt || "").localeCompare(a.createdAt || "");
 
-  // Hero shelf: critical/high non-done
+  // Featured ticket: highest priority non-done ticket (prefer in-progress, then open, then review)
+  const statusWeight = { progress: 0, open: 1, review: 2 };
+  const nonDone = tickets.filter(t => t.status !== "done").sort((a, b) => {
+    const pd = pw[a.priority] - pw[b.priority];
+    if (pd !== 0) return pd;
+    const sw = (statusWeight[a.status] ?? 9) - (statusWeight[b.status] ?? 9);
+    if (sw !== 0) return sw;
+    return (b.createdAt || "").localeCompare(a.createdAt || "");
+  });
+  const featured = nonDone.length > 0 ? nonDone[0] : null;
+  const featuredId = featured ? featured.id : null;
+
+  // Hero shelf: critical/high non-done (exclude featured)
   const heroIds = new Set();
-  const hero = tickets.filter(t => (t.priority === "critical" || t.priority === "high") && t.status !== "done");
+  const hero = tickets.filter(t => (t.priority === "critical" || t.priority === "high") && t.status !== "done" && t.id !== featuredId);
   hero.sort(byPriorityDate);
   hero.forEach(t => heroIds.add(t.id));
 
-  // Status-based shelves (exclude hero tickets)
-  const progress = tickets.filter(t => t.status === "progress" && !heroIds.has(t.id)).sort(byPriorityDate);
-  const open = tickets.filter(t => t.status === "open" && !heroIds.has(t.id)).sort(byPriorityDate);
-  const review = tickets.filter(t => t.status === "review" && !heroIds.has(t.id)).sort(byPriorityDate);
+  // Status-based shelves (exclude hero + featured tickets)
+  const excluded = id => heroIds.has(id) || id === featuredId;
+  const progress = tickets.filter(t => t.status === "progress" && !excluded(t.id)).sort(byPriorityDate);
+  const open = tickets.filter(t => t.status === "open" && !excluded(t.id)).sort(byPriorityDate);
+  const review = tickets.filter(t => t.status === "review" && !excluded(t.id)).sort(byPriorityDate);
 
   // Done shelf: by updatedAt desc, capped at 10
   const done = tickets.filter(t => t.status === "done")
@@ -2694,7 +2801,7 @@ function getNetflixShelves(tickets) {
   if (open.length) shelves.push({ title: "Open Tickets", tickets: open, cls: "" });
   if (review.length) shelves.push({ title: "In Review", tickets: review, cls: "" });
   if (done.length) shelves.push({ title: "Recently Completed", tickets: done, cls: "nf-shelf-done" });
-  return shelves;
+  return { featured, shelves };
 }
 
 // --- Netflix card renderer ---
@@ -2718,10 +2825,35 @@ function renderNfCard(t) {
     </div>`;
 }
 
+// --- Netflix hero banner renderer ---
+function renderNfHeroBanner(t) {
+  if (!t) return "";
+  const statusLabel = { open: "Open", progress: "In Progress", review: "Review", done: "Done" };
+  const imageHtml = t.image
+    ? `<img class="nf-hero-img" src="data:image/png;base64,${t.image}" alt="" />`
+    : `<div class="nf-hero-placeholder"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg></div>`;
+  return `
+    <div class="nf-hero-banner" onclick="openTicketDetail('${t.id}')">
+      ${imageHtml}
+      <div class="nf-hero-gradient"></div>
+      <div class="nf-hero-info">
+        <div class="nf-hero-label">\u2b50 Featured</div>
+        <div class="nf-hero-title">${esc(t.title)}</div>
+        ${t.description ? `<div class="nf-hero-desc">${esc(t.description)}</div>` : ""}
+        <div class="nf-hero-badges">
+          <span class="badge badge-${t.type}">${esc(t.type)}</span>
+          <span class="badge badge-${t.priority}">${esc(t.priority)}</span>
+          <span class="badge badge-${t.status}">${esc(statusLabel[t.status] || t.status)}</span>
+          ${t.area ? `<span class="badge badge-area">${esc(getAreaLabel(t.area))}</span>` : ""}
+        </div>
+      </div>
+    </div>`;
+}
+
 // --- Netflix view renderer ---
 function renderNetflixView(tickets) {
-  const shelves = getNetflixShelves(tickets);
-  if (shelves.length === 0) {
+  const { featured, shelves } = getNetflixShelves(tickets);
+  if (!featured && shelves.length === 0) {
     return `
       <div class="empty-state">
         <div class="empty-state-icon"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M9 12h6M12 9v6"/></svg></div>
@@ -2729,7 +2861,9 @@ function renderNetflixView(tickets) {
         <div class="empty-state-sub">Create your first ticket to start tracking work.</div>
       </div>`;
   }
-  return `<div class="nf-feed">${shelves.map(s => `
+  return `<div class="nf-feed">
+    ${renderNfHeroBanner(featured)}
+    ${shelves.map(s => `
     <div class="nf-shelf ${s.cls}">
       <div class="nf-shelf-header">
         <div class="nf-shelf-title">${s.title}</div>

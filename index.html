@@ -702,6 +702,257 @@ html, body {
   margin-bottom: 6px;
 }
 
+/* --- Tracker View Toggle --- */
+.tracker-view-toggle {
+  display: flex;
+  gap: 2px;
+  background: color-mix(in srgb, var(--text) 5%, transparent);
+  border-radius: 8px;
+  padding: 3px;
+}
+
+.tracker-view-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 28px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+
+.tracker-view-btn:hover { color: var(--text); background: color-mix(in srgb, var(--text) 5%, transparent); }
+
+.tracker-view-btn.active {
+  background: var(--panel2);
+  color: var(--text);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+.tracker-view-btn svg { width: 16px; height: 16px; }
+
+/* --- Netflix Shelf Feed --- */
+.nf-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  padding-top: 8px;
+}
+
+.nf-shelf { display: flex; flex-direction: column; gap: 10px; }
+
+.nf-shelf-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 2px;
+}
+
+.nf-shelf-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+
+.nf-shelf-count {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--muted);
+  background: color-mix(in srgb, var(--text) 6%, transparent);
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.nf-shelf-row {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding: 6px 2px 12px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--border) 30%, transparent) transparent;
+}
+
+.nf-shelf-row::-webkit-scrollbar { height: 4px; }
+.nf-shelf-row::-webkit-scrollbar-track { background: transparent; }
+.nf-shelf-row::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--border) 30%, transparent); border-radius: 4px; }
+
+/* --- Netflix Cards (Poster-Style) --- */
+.nf-card {
+  flex-shrink: 0;
+  width: 180px;
+  border-radius: 10px;
+  background: var(--panel2);
+  border: 1px solid color-mix(in srgb, var(--border) 10%, transparent);
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 200ms ease, box-shadow 200ms ease;
+  scroll-snap-align: start;
+  transform-style: preserve-3d;
+  will-change: transform;
+  position: relative;
+}
+
+.nf-card:hover {
+  box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+}
+
+.nf-card-image {
+  width: 100%;
+  height: 140px;
+  object-fit: cover;
+  display: block;
+}
+
+.nf-card-placeholder {
+  width: 100%;
+  height: 140px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--text) 4%, transparent);
+  color: var(--muted);
+}
+
+.nf-card-placeholder svg { width: 36px; height: 36px; opacity: 0.3; }
+
+.nf-card-overlay {
+  position: relative;
+}
+
+.nf-card-overlay::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 40px;
+  background: linear-gradient(to bottom, transparent, var(--panel2));
+  pointer-events: none;
+}
+
+.nf-card-info {
+  padding: 10px 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.nf-card-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.nf-card-badges {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.nf-card-area {
+  font-size: 10px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Priority glow */
+.nf-glow-critical {
+  border-color: color-mix(in srgb, #dc2626 50%, transparent);
+  box-shadow: 0 0 12px color-mix(in srgb, #dc2626 18%, transparent);
+}
+
+.nf-glow-high {
+  border-color: color-mix(in srgb, #ea580c 40%, transparent);
+  box-shadow: 0 0 10px color-mix(in srgb, #ea580c 14%, transparent);
+}
+
+/* Hero shelf (larger cards) */
+.nf-shelf-hero .nf-card { width: 220px; }
+.nf-shelf-hero .nf-card-image,
+.nf-shelf-hero .nf-card-placeholder { height: 170px; }
+
+/* Done shelf (muted) */
+.nf-shelf-done .nf-card { opacity: 0.5; }
+.nf-shelf-done .nf-card:hover { opacity: 0.8; }
+
+/* --- Simplified List View --- */
+.simple-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--border) 8%, transparent);
+  margin-top: 8px;
+}
+
+.simple-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  background: var(--panel2);
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+
+.simple-row:hover { background: color-mix(in srgb, var(--focus) 4%, var(--panel2)); }
+
+.simple-priority {
+  width: 3px;
+  height: 22px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.simple-priority.p-critical { background: #dc2626; }
+.simple-priority.p-high { background: #ea580c; }
+.simple-priority.p-medium { background: var(--runRunning); }
+.simple-priority.p-low { background: color-mix(in srgb, var(--muted) 40%, transparent); }
+
+.simple-title {
+  flex: 1;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.simple-status {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 2px 8px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.simple-status-open { color: var(--focus); background: color-mix(in srgb, var(--focus) 10%, transparent); }
+.simple-status-progress { color: #e4a321; background: color-mix(in srgb, #e4a321 10%, transparent); }
+.simple-status-review { color: #a78bfa; background: color-mix(in srgb, #a78bfa 10%, transparent); }
+.simple-status-done { color: #34d399; background: color-mix(in srgb, #34d399 10%, transparent); }
+
+.simple-done { opacity: 0.4; }
+.simple-done .simple-title { text-decoration: line-through; }
+
 /* --- Prompt Lab --- */
 .prompt-layout {
   display: grid;
@@ -1272,6 +1523,13 @@ html, body {
   .health-sidebar-title { grid-column: 1 / -1; padding: 0 0 6px; }
   .health-row { padding: 6px 10px; border-radius: 8px; background: color-mix(in srgb, var(--text) 3%, transparent); }
   .detail-panel { width: 400px; }
+
+  /* Netflix tracker — tablet */
+  .nf-shelf-hero .nf-card { width: 200px; }
+  .nf-shelf-hero .nf-card-image,
+  .nf-shelf-hero .nf-card-placeholder { height: 150px; }
+  .nf-card { width: 160px; }
+  .nf-card-image, .nf-card-placeholder { height: 120px; }
 }
 
 /* --- Responsive: Mobile (≤ 640px) --- */
@@ -1477,6 +1735,16 @@ html, body {
   .btn-sm { padding: 7px 12px; font-size: 11px; }
   .btn-icon { padding: 8px; }
   .btn-icon svg { width: 18px; height: 18px; }
+
+  /* Netflix tracker — mobile */
+  .nf-shelf-hero .nf-card { width: 160px; }
+  .nf-shelf-hero .nf-card-image,
+  .nf-shelf-hero .nf-card-placeholder { height: 120px; }
+  .nf-card { width: 140px; }
+  .nf-card-image, .nf-card-placeholder { height: 100px; }
+  .nf-card-title { font-size: 11px; }
+  .nf-shelf-title { font-size: 13px; }
+  .nf-feed { gap: 20px; }
 }
 
 /* --- Responsive: Small phones (≤ 380px) --- */
@@ -1487,6 +1755,13 @@ html, body {
   .health-row-label { font-size: 11px; }
   .badge { font-size: 9px; padding: 2px 6px; }
   .tracker-filter { font-size: 9px; }
+
+  /* Netflix tracker — small phones */
+  .nf-shelf-hero .nf-card { width: 140px; }
+  .nf-shelf-hero .nf-card-image,
+  .nf-shelf-hero .nf-card-placeholder { height: 90px; }
+  .nf-card { width: 130px; }
+  .nf-card-image, .nf-card-placeholder { height: 90px; }
 }
 
 /* --- Safe area insets (notch/home bar) --- */
@@ -2267,6 +2542,7 @@ let trackerTypeFilter = "all";
 let trackerStatusFilter = "all";
 let trackerPriorityFilter = "all";
 let trackerAreaFilter = "all";
+let trackerView = "netflix"; // "netflix" | "simple"
 
 function getFilteredTickets() {
   let list = [...DATA.tickets];
@@ -2286,13 +2562,119 @@ function getFilteredTickets() {
   return list;
 }
 
+// --- Netflix shelf grouping ---
+function getNetflixShelves(tickets) {
+  const pw = { critical: 0, high: 1, medium: 2, low: 3 };
+  const byPriorityDate = (a, b) => pw[a.priority] - pw[b.priority] || (b.createdAt || "").localeCompare(a.createdAt || "");
+
+  // Hero shelf: critical/high non-done
+  const heroIds = new Set();
+  const hero = tickets.filter(t => (t.priority === "critical" || t.priority === "high") && t.status !== "done");
+  hero.sort(byPriorityDate);
+  hero.forEach(t => heroIds.add(t.id));
+
+  // Status-based shelves (exclude hero tickets)
+  const progress = tickets.filter(t => t.status === "progress" && !heroIds.has(t.id)).sort(byPriorityDate);
+  const open = tickets.filter(t => t.status === "open" && !heroIds.has(t.id)).sort(byPriorityDate);
+  const review = tickets.filter(t => t.status === "review" && !heroIds.has(t.id)).sort(byPriorityDate);
+
+  // Done shelf: by updatedAt desc, capped at 10
+  const done = tickets.filter(t => t.status === "done")
+    .sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""))
+    .slice(0, 10);
+
+  const shelves = [];
+  if (hero.length) shelves.push({ title: "Critical & High Priority", tickets: hero, cls: "nf-shelf-hero" });
+  if (progress.length) shelves.push({ title: "In Progress", tickets: progress, cls: "" });
+  if (open.length) shelves.push({ title: "Open Tickets", tickets: open, cls: "" });
+  if (review.length) shelves.push({ title: "In Review", tickets: review, cls: "" });
+  if (done.length) shelves.push({ title: "Recently Completed", tickets: done, cls: "nf-shelf-done" });
+  return shelves;
+}
+
+// --- Netflix card renderer ---
+function renderNfCard(t) {
+  const glowCls = t.priority === "critical" ? " nf-glow-critical" : t.priority === "high" ? " nf-glow-high" : "";
+  const statusLabel = { open: "Open", progress: "In Progress", review: "Review", done: "Done" };
+  const imageHtml = t.image
+    ? `<div class="nf-card-overlay"><img class="nf-card-image" src="data:image/png;base64,${t.image}" alt="" loading="lazy" /></div>`
+    : `<div class="nf-card-overlay"><div class="nf-card-placeholder"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg></div></div>`;
+  return `
+    <div class="nf-card${glowCls}" onclick="openTicketDetail('${t.id}')">
+      ${imageHtml}
+      <div class="nf-card-info">
+        <div class="nf-card-title">${esc(t.title)}</div>
+        <div class="nf-card-badges">
+          <span class="badge badge-${t.type}">${esc(t.type)}</span>
+          <span class="badge badge-${t.priority}">${esc(t.priority)}</span>
+        </div>
+        ${t.area ? `<div class="nf-card-area">${esc(getAreaLabel(t.area))}${t.subarea ? ` › ${esc(t.subarea)}` : ""}</div>` : ""}
+      </div>
+    </div>`;
+}
+
+// --- Netflix view renderer ---
+function renderNetflixView(tickets) {
+  const shelves = getNetflixShelves(tickets);
+  if (shelves.length === 0) {
+    return `
+      <div class="empty-state">
+        <div class="empty-state-icon"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M9 12h6M12 9v6"/></svg></div>
+        <div class="empty-state-title">No tickets${trackerSearch || trackerTypeFilter !== "all" || trackerStatusFilter !== "all" || trackerAreaFilter !== "all" ? " match your filters" : " yet"}</div>
+        <div class="empty-state-sub">Create your first ticket to start tracking work.</div>
+      </div>`;
+  }
+  return `<div class="nf-feed">${shelves.map(s => `
+    <div class="nf-shelf ${s.cls}">
+      <div class="nf-shelf-header">
+        <div class="nf-shelf-title">${s.title}</div>
+        <div class="nf-shelf-count">${s.tickets.length}</div>
+      </div>
+      <div class="nf-shelf-row">${s.tickets.map(renderNfCard).join("")}</div>
+    </div>`).join("")}</div>`;
+}
+
+// --- Simplified view renderer ---
+function renderSimpleView(tickets) {
+  const statusLabel = { open: "Open", progress: "In Progress", review: "Review", done: "Done" };
+  if (tickets.length === 0) {
+    return `
+      <div class="empty-state">
+        <div class="empty-state-icon"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M9 12h6M12 9v6"/></svg></div>
+        <div class="empty-state-title">No tickets${trackerSearch || trackerTypeFilter !== "all" || trackerStatusFilter !== "all" || trackerAreaFilter !== "all" ? " match your filters" : " yet"}</div>
+        <div class="empty-state-sub">Create your first ticket to start tracking work.</div>
+      </div>`;
+  }
+  return `<div class="simple-list">${tickets.map(t => `
+    <div class="simple-row${t.status === "done" ? " simple-done" : ""}" onclick="openTicketDetail('${t.id}')">
+      <div class="simple-priority p-${t.priority}"></div>
+      <div class="simple-title">${esc(t.title)}</div>
+      <span class="simple-status simple-status-${t.status}">${statusLabel[t.status] || t.status}</span>
+    </div>`).join("")}</div>`;
+}
+
+// --- View toggle handler ---
+function setTrackerView(view) {
+  trackerView = view;
+  renderTracker();
+}
+
 function renderTracker() {
   const tickets = getFilteredTickets();
-  const statusLabel = { open: "Open", progress: "In Progress", review: "Review", done: "Done" };
 
   document.getElementById("page-tracker").innerHTML = `
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
-      <div class="page-title">Tracker</div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div class="page-title">Tracker</div>
+        <div class="tracker-view-toggle">
+          <button class="tracker-view-btn${trackerView === "netflix" ? " active" : ""}" onclick="setTrackerView('netflix')" title="Card View">
+            <svg viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg>
+          </button>
+          <button class="tracker-view-btn${trackerView === "simple" ? " active" : ""}" onclick="setTrackerView('simple')" title="List View">
+            <svg viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="2" width="14" height="2.5" rx="1"/><rect x="1" y="6.75" width="14" height="2.5" rx="1"/><rect x="1" y="11.5" width="14" height="2.5" rx="1"/></svg>
+          </button>
+        </div>
+      </div>
       <button class="btn btn-primary" onclick="openNewTicketModal()">+ New Ticket</button>
     </div>
     <div class="page-subtitle">Bugs, features, and enhancements &mdash; ${DATA.tickets.length} total</div>
@@ -2327,34 +2709,8 @@ function renderTracker() {
       </select>
     </div>
 
-    <div class="ticket-list">
-      ${tickets.length === 0 ? `
-        <div class="empty-state">
-          <div class="empty-state-icon"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M9 12h6M12 9v6"/></svg></div>
-          <div class="empty-state-title">No tickets${trackerSearch || trackerTypeFilter !== "all" || trackerStatusFilter !== "all" || trackerAreaFilter !== "all" ? " match your filters" : " yet"}</div>
-          <div class="empty-state-sub">Create your first ticket to start tracking work.</div>
-        </div>
-      ` : tickets.map(t => `
-        <div class="ticket-row${t.status === "done" ? " done-row" : ""}" onclick="openTicketDetail('${t.id}')">
-          <div class="ticket-priority p-${t.priority}"></div>
-          ${t.image ? `<img class="ticket-thumb" src="data:image/png;base64,${t.image}" alt="" loading="lazy" />` : ``}
-          <div class="ticket-body">
-            <div class="ticket-title">${esc(t.title)}</div>
-            <div class="ticket-meta">
-              <span class="ticket-id">${esc(t.id)}</span>
-              <span class="badge badge-${t.type}">${esc(t.type)}</span>
-              <span class="badge badge-${t.status}">${esc(statusLabel[t.status] || t.status)}</span>
-              ${t.area ? `<span class="badge badge-area">${esc(getAreaLabel(t.area))}${t.subarea ? ` \u203A ${esc(t.subarea)}` : ""}</span>` : ""}
-              ${t.assignee ? `<span style="font-size:10px;color:var(--muted)">${esc(t.assignee)}</span>` : ""}
-            </div>
-          </div>
-          <div class="ticket-actions">
-            <button class="btn-icon" onclick="event.stopPropagation();generatePromptForTicket('${t.id}')" title="Generate AI Prompt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2l8 4.5v7L12 18l-8-4.5v-7z"/><path d="M12 18v4"/><path d="M12 2v8"/></svg></button>
-            <button class="btn-icon" onclick="event.stopPropagation();cycleStatus('${t.id}')" title="Advance Status"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="9 6 15 12 9 18"/></svg></button>
-            <button class="btn-icon" onclick="event.stopPropagation();openEditTicketModal('${t.id}')" title="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z"/></svg></button>
-          </div>
-        </div>
-      `).join("")}
+    <div id="tracker-content">
+      ${trackerView === "netflix" ? renderNetflixView(tickets) : renderSimpleView(tickets)}
     </div>
   `;
 
@@ -2369,6 +2725,9 @@ function renderTracker() {
   document.getElementById("tracker-status-filter")?.addEventListener("change", e => { trackerStatusFilter = e.target.value; renderTracker(); });
   document.getElementById("tracker-priority-filter")?.addEventListener("change", e => { trackerPriorityFilter = e.target.value; renderTracker(); });
   document.getElementById("tracker-area-filter")?.addEventListener("change", e => { trackerAreaFilter = e.target.value; renderTracker(); });
+
+  // Init 3D tilt for Netflix cards
+  if (trackerView === "netflix") initTrackerTilt();
 }
 
 function cycleStatus(id) {
@@ -3785,6 +4144,29 @@ function initRoadmapTilt() {
       const rotateY = ((x - centerX) / centerX) * MAX_TILT;
       const rotateX = ((centerY - y) / centerY) * MAX_TILT;
       card.style.transform = `perspective(600px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(-1px)`;
+    });
+
+    card.addEventListener("mouseleave", () => {
+      card.style.transform = "";
+    });
+  });
+}
+
+// --- Tracker 3D tilt (Netflix card hover) ---
+function initTrackerTilt() {
+  const cards = document.querySelectorAll(".nf-card");
+  const MAX_TILT = 4;
+
+  cards.forEach(card => {
+    card.addEventListener("mousemove", e => {
+      const rect = card.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      const centerX = rect.width / 2;
+      const centerY = rect.height / 2;
+      const rotateY = ((x - centerX) / centerX) * MAX_TILT;
+      const rotateX = ((centerY - y) / centerY) * MAX_TILT;
+      card.style.transform = `perspective(600px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.03)`;
     });
 
     card.addEventListener("mouseleave", () => {

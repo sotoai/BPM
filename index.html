@@ -2931,6 +2931,11 @@ function submitEditTicket(id) {
   apiUpdateTicket(t.id, { title: t.title, description: t.description, type: t.type, priority: t.priority, status: t.status, area: t.area, subarea: t.subarea, assignee: t.assignee, files: t.files, updatedAt: t.updatedAt }, act);
   closeModal();
   renderCurrentPage();
+
+  // Regenerate ticket image based on updated details
+  t.image = "";
+  apiRegenerateImage(t.id);
+  pollForTicketImage(t.id);
 }
 
 async function regenerateTicketImage(id) {

@@ -686,6 +686,104 @@ html, body {
   margin-top: 6px;
 }
 
+/* --- Notes --- */
+.notes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.note-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 30%, transparent);
+}
+.note-item:last-child { border-bottom: none; }
+.note-dot {
+  width: 8px;
+  height: 8px;
+  min-width: 8px;
+  border-radius: 50%;
+  background: var(--focus);
+  margin-top: 4px;
+}
+.note-body { flex: 1; min-width: 0; }
+.note-content {
+  font-size: 13px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--text);
+}
+.note-meta {
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 3px;
+}
+.note-delete-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--muted);
+  opacity: 0.4;
+  font-size: 14px;
+  padding: 2px 4px;
+  transition: opacity 0.15s, color 0.15s;
+}
+.note-delete-btn:hover {
+  opacity: 1;
+  color: #dc2626;
+}
+.note-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+.note-form textarea {
+  width: 100%;
+  min-height: 60px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--card);
+  color: var(--text);
+  font-size: 13px;
+  font-family: inherit;
+  resize: vertical;
+}
+.note-form textarea:focus {
+  outline: none;
+  border-color: var(--focus);
+}
+.note-form-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.note-form-row input {
+  flex: 1;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--card);
+  color: var(--text);
+  font-size: 12px;
+  font-family: inherit;
+}
+.note-form-row input:focus {
+  outline: none;
+  border-color: var(--focus);
+}
+.notes-empty {
+  font-size: 12px;
+  font-style: italic;
+  color: var(--muted);
+  opacity: 0.6;
+  padding: 8px 0;
+}
+
 .roadmap-card-image {
   width: 100%;
   height: 80px;
@@ -2144,6 +2242,33 @@ function apiDeleteTicket(id, activityEntry) {
   }).catch(err => console.warn("[BPM] Delete failed:", err.message));
 }
 
+// --- Notes API helpers ---
+async function apiGetNotes(ticketId) {
+  try {
+    const res = await fetch(`${API_BASE}/api/tickets/${encodeURIComponent(ticketId)}/notes`);
+    if (res.ok) return await res.json();
+  } catch (e) { console.warn("[BPM] Fetch notes failed:", e.message); }
+  return [];
+}
+
+async function apiCreateNote(ticketId, note) {
+  try {
+    const res = await fetch(`${API_BASE}/api/tickets/${encodeURIComponent(ticketId)}/notes`, {
+      method: "POST", headers: JSON_HEADERS, body: JSON.stringify(note),
+    });
+    if (res.ok) return await res.json();
+  } catch (e) { console.warn("[BPM] Create note failed:", e.message); }
+  return null;
+}
+
+async function apiDeleteNote(ticketId, noteId) {
+  try {
+    await fetch(`${API_BASE}/api/tickets/${encodeURIComponent(ticketId)}/notes/${encodeURIComponent(noteId)}`, {
+      method: "DELETE", headers: JSON_HEADERS,
+    });
+  } catch (err) { console.warn("[BPM] Delete note failed:", err.message); }
+}
+
 // Bulk sync fallback (used for migration)
 function saveData(data) {
   fetch(`${API_BASE}/api/data`, {
@@ -3007,12 +3132,69 @@ function openTicketDetail(id) {
       </div>
     ` : ""}
 
+    <div>
+      <div class="detail-section-title">Notes</div>
+      <div id="notes-container"><span class="notes-empty">Loading notes\u2026</span></div>
+      <div class="note-form">
+        <textarea id="note-content-input" placeholder="Add a note\u2026" rows="2"></textarea>
+        <div class="note-form-row">
+          <input id="note-author-input" type="text" placeholder="Your name" value="${esc(localStorage.getItem('bpm_note_author') || '')}" />
+          <button class="btn btn-primary btn-sm" onclick="submitNote('${t.id}')">Add Note</button>
+        </div>
+      </div>
+    </div>
+
     <div class="detail-actions">
       <button class="btn btn-primary" onclick="generatePromptForTicket('${t.id}');closeDetail()">Generate AI Prompt</button>
       <button class="btn" onclick="openEditTicketModal('${t.id}')">Edit</button>
       <button class="btn" onclick="cycleStatus('${t.id}');closeDetail()">Advance Status</button>
     </div>
   `);
+  loadAndRenderNotes(id);
+}
+
+// --- Notes rendering & submission ---
+function renderNotesSection(ticketId, notes) {
+  const container = document.getElementById("notes-container");
+  if (!container) return;
+  if (!notes || notes.length === 0) {
+    container.innerHTML = '<span class="notes-empty">No notes yet.</span>';
+    return;
+  }
+  container.innerHTML = `<div class="notes-list">${notes.map(n => `
+    <div class="note-item">
+      <div class="note-dot"></div>
+      <div class="note-body">
+        <div class="note-content">${esc(n.content)}</div>
+        <div class="note-meta">${esc(n.author || "Anonymous")} \u00b7 ${formatTime(n.createdAt)}</div>
+      </div>
+      <button class="note-delete-btn" title="Delete note" onclick="deleteNote('${ticketId}','${n.id}')">\u00d7</button>
+    </div>
+  `).join("")}</div>`;
+}
+
+async function loadAndRenderNotes(ticketId) {
+  const notes = await apiGetNotes(ticketId);
+  renderNotesSection(ticketId, notes);
+}
+
+async function submitNote(ticketId) {
+  const contentEl = document.getElementById("note-content-input");
+  const authorEl = document.getElementById("note-author-input");
+  if (!contentEl || !authorEl) return;
+  const content = contentEl.value.trim();
+  if (!content) { contentEl.focus(); return; }
+  const author = authorEl.value.trim() || "Anonymous";
+  localStorage.setItem("bpm_note_author", author);
+  contentEl.value = "";
+  const created = await apiCreateNote(ticketId, { content, author });
+  if (created) loadAndRenderNotes(ticketId);
+}
+
+async function deleteNote(ticketId, noteId) {
+  if (!confirm("Delete this note?")) return;
+  await apiDeleteNote(ticketId, noteId);
+  loadAndRenderNotes(ticketId);
 }
 
 // === PROMPT LAB ===

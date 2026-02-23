@@ -78,6 +78,15 @@ db.exec(`
     key   TEXT PRIMARY KEY,
     value TEXT NOT NULL
   );
+
+  CREATE TABLE IF NOT EXISTS notes (
+    id        TEXT PRIMARY KEY,
+    ticketId  TEXT NOT NULL REFERENCES tickets(id) ON DELETE CASCADE,
+    content   TEXT NOT NULL,
+    author    TEXT NOT NULL DEFAULT '',
+    createdAt TEXT NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_notes_ticket ON notes(ticketId);
 `);
 
 // Migration: add image column if it doesn't exist (for existing databases)
@@ -103,6 +112,10 @@ const stmts = {
 
   getSetting:      db.prepare("SELECT value FROM settings WHERE key = ?"),
   upsertSetting:   db.prepare("INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value=excluded.value"),
+
+  notesByTicket:   db.prepare("SELECT * FROM notes WHERE ticketId = ? ORDER BY createdAt DESC"),
+  insertNote:      db.prepare("INSERT INTO notes (id, ticketId, content, author, createdAt) VALUES (@id, @ticketId, @content, @author, @createdAt)"),
+  deleteNote:      db.prepare("DELETE FROM notes WHERE id = ?"),
 };
 
 // Transactional bulk write (for the PUT /api/data full-sync endpoint)
@@ -536,6 +549,53 @@ const server = http.createServer(async (req, res) => {
         const existing = stmts.getTicket.get(m.id);
         if (!existing) { sendJSON(res, 404, { error: "Ticket not found" }); return; }
         sendJSON(res, 200, { id: m.id, image: existing.image || "" });
+        return;
+      }
+    }
+
+    // --- Notes ---
+
+    // GET /api/tickets/:id/notes — fetch all notes for a ticket
+    {
+      const m = matchRoute("GET", pathname, "/api/tickets/:id/notes");
+      if (m) {
+        const existing = stmts.getTicket.get(m.id);
+        if (!existing) { sendJSON(res, 404, { error: "Ticket not found" }); return; }
+        sendJSON(res, 200, stmts.notesByTicket.all(m.id));
+        return;
+      }
+    }
+
+    // POST /api/tickets/:id/notes — create a note
+    {
+      const m = matchRoute("POST", pathname, "/api/tickets/:id/notes");
+      if (m) {
+        const existing = stmts.getTicket.get(m.id);
+        if (!existing) { sendJSON(res, 404, { error: "Ticket not found" }); return; }
+        const body = await parseBody(req);
+        if (!body.content || !body.content.trim()) {
+          sendJSON(res, 400, { error: "Note content is required" });
+          return;
+        }
+        const note = {
+          id: body.id || `note-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          ticketId: m.id,
+          content: body.content.trim(),
+          author: (body.author && body.author.trim()) || "Anonymous",
+          createdAt: new Date().toISOString(),
+        };
+        stmts.insertNote.run(note);
+        sendJSON(res, 201, note);
+        return;
+      }
+    }
+
+    // DELETE /api/tickets/:id/notes/:noteId — delete a single note
+    {
+      const m = matchRoute("DELETE", pathname, "/api/tickets/:id/notes/:noteId");
+      if (m) {
+        stmts.deleteNote.run(m.noteId);
+        sendJSON(res, 200, { ok: true });
         return;
       }
     }

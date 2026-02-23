@@ -1626,10 +1626,30 @@ html, body {
   margin-bottom: 6px;
 }
 
+.roadmap-card-desc {
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.4;
+  margin-bottom: 6px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
 .roadmap-card-meta {
   display: flex;
   align-items: center;
   gap: 6px;
+}
+
+/* Compact card (list mode inside kanban columns) */
+.roadmap-card-compact {
+  padding: 8px 10px;
+}
+.roadmap-card-compact .roadmap-card-meta {
+  margin-top: 4px;
+  padding-left: 14px;
 }
 
 /* --- Copy toast --- */
@@ -4480,7 +4500,38 @@ function setRoadmapView(view) {
   renderRoadmap();
 }
 
-function renderRoadmapKanban() {
+function renderRoadmapCard(t) {
+  return `
+    <div class="roadmap-card" draggable="true" data-ticket-id="${t.id}" onclick="openTicketDetail('${t.id}')">
+      ${t.image ? `<img class="roadmap-card-image" src="data:image/png;base64,${t.image}" alt="" loading="lazy" />` : ``}
+      <div class="roadmap-card-title">${esc(t.title)}</div>
+      ${t.description ? `<div class="roadmap-card-desc">${esc(t.description)}</div>` : ""}
+      <div class="roadmap-card-meta">
+        <span class="badge badge-${t.type}" style="font-size:9px">${esc(t.type)}</span>
+        <span class="badge badge-${t.priority}" style="font-size:9px">${esc(t.priority)}</span>
+        ${t.area ? `<span class="badge badge-area" style="font-size:9px">${esc(getAreaLabel(t.area))}</span>` : ""}
+        ${t.assignee ? `<span style="font-size:10px;color:var(--muted);margin-left:auto">${esc(t.assignee)}</span>` : ""}
+      </div>
+      <div class="nf-shine"></div>
+    </div>`;
+}
+
+function renderRoadmapCompactCard(t) {
+  return `
+    <div class="roadmap-card roadmap-card-compact" draggable="true" data-ticket-id="${t.id}" onclick="openTicketDetail('${t.id}')">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div class="simple-priority p-${t.priority}"></div>
+        <div class="roadmap-card-title" style="margin:0;flex:1;min-width:0">${esc(t.title)}</div>
+      </div>
+      <div class="roadmap-card-meta">
+        <span class="badge badge-${t.type}" style="font-size:9px">${esc(t.type)}</span>
+        ${t.area ? `<span class="badge badge-area" style="font-size:9px">${esc(getAreaLabel(t.area))}</span>` : ""}
+        ${t.assignee ? `<span style="font-size:10px;color:var(--muted);margin-left:auto">${esc(t.assignee)}</span>` : ""}
+      </div>
+    </div>`;
+}
+
+function renderRoadmapColumns(cardRenderer) {
   const cols = ["open", "progress", "review", "done"];
   const labels = { open: "Backlog", progress: "In Progress", review: "In Review", done: "Completed" };
 
@@ -4502,48 +4553,11 @@ function renderRoadmapKanban() {
         </div>
         <div class="roadmap-cards" data-status="${col}">
           ${grouped[col].length === 0 ? `<div class="empty-state" style="padding:24px 12px"><div class="empty-state-sub">No items</div></div>` :
-            grouped[col].map(t => `
-              <div class="roadmap-card" draggable="true" data-ticket-id="${t.id}" onclick="openTicketDetail('${t.id}')">
-                ${t.image ? `<img class="roadmap-card-image" src="data:image/png;base64,${t.image}" alt="" loading="lazy" />` : ``}
-                <div class="roadmap-card-title">${esc(t.title)}</div>
-                <div class="roadmap-card-meta">
-                  <span class="badge badge-${t.type}" style="font-size:9px">${esc(t.type)}</span>
-                  <span class="badge badge-${t.priority}" style="font-size:9px">${esc(t.priority)}</span>
-                  ${t.area ? `<span class="badge badge-area" style="font-size:9px">${esc(getAreaLabel(t.area))}</span>` : ""}
-                  ${t.assignee ? `<span style="font-size:10px;color:var(--muted);margin-left:auto">${esc(t.assignee)}</span>` : ""}
-                </div>
-                <div class="nf-shine"></div>
-              </div>
-            `).join("")}
+            grouped[col].map(cardRenderer).join("")}
         </div>
       </div>
     `).join("")}
   </div>`;
-}
-
-function renderRoadmapListView() {
-  const statusLabel = { open: "Backlog", progress: "In Progress", review: "In Review", done: "Completed" };
-  const pw = { critical: 0, high: 1, medium: 2, low: 3 };
-  const tickets = [...DATA.tickets].sort((a, b) => {
-    const ss = { progress: 0, open: 1, review: 2, done: 3 };
-    const sd = (ss[a.status] ?? 9) - (ss[b.status] ?? 9);
-    if (sd !== 0) return sd;
-    return pw[a.priority] - pw[b.priority];
-  });
-  if (tickets.length === 0) {
-    return `
-      <div class="empty-state">
-        <div class="empty-state-icon"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M9 12h6M12 9v6"/></svg></div>
-        <div class="empty-state-title">No tickets yet</div>
-        <div class="empty-state-sub">Create your first ticket to start tracking work.</div>
-      </div>`;
-  }
-  return `<div class="simple-list">${tickets.map(t => `
-    <div class="simple-row${t.status === "done" ? " simple-done" : ""}" onclick="openTicketDetail('${t.id}')">
-      <div class="simple-priority p-${t.priority}"></div>
-      <div class="simple-title">${esc(t.title)}</div>
-      <span class="simple-status simple-status-${t.status}">${statusLabel[t.status] || t.status}</span>
-    </div>`).join("")}</div>`;
 }
 
 function renderRoadmap() {
@@ -4562,17 +4576,15 @@ function renderRoadmap() {
       </div>
       <button class="btn btn-primary" onclick="openNewTicketModal()">+ New Ticket</button>
     </div>
-    <div class="page-subtitle">${roadmapView === "card" ? "Kanban board view of all work items" : "All work items \u2014 " + DATA.tickets.length + " total"}</div>
+    <div class="page-subtitle">Kanban board view of all work items</div>
 
     <div id="roadmap-content">
-      ${roadmapView === "card" ? renderRoadmapKanban() : renderRoadmapListView()}
+      ${renderRoadmapColumns(roadmapView === "card" ? renderRoadmapCard : renderRoadmapCompactCard)}
     </div>
   `;
 
-  if (roadmapView === "card") {
-    initRoadmapDragDrop();
-    initRoadmapTilt();
-  }
+  initRoadmapDragDrop();
+  if (roadmapView === "card") initRoadmapTilt();
 }
 
 // --- Roadmap drag-and-drop ---

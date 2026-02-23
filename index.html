@@ -1126,6 +1126,8 @@ html, body {
 }
 
 .simple-row:hover { background: color-mix(in srgb, var(--focus) 4%, var(--panel2)); }
+.simple-row.simple-selected { background: color-mix(in srgb, var(--focus) 8%, var(--panel2)); }
+.simple-row.simple-selected .simple-title { color: var(--focus); }
 
 .simple-priority {
   width: 3px;
@@ -1561,6 +1563,7 @@ html, body {
 }
 
 .roadmap-card {
+  position: relative;
   background: var(--panel2);
   border: 1px solid color-mix(in srgb, var(--border) 6%, transparent);
   border-radius: 8px;
@@ -1569,7 +1572,9 @@ html, body {
   transition: border-color 150ms ease, box-shadow 150ms ease;
   transform-style: preserve-3d;
   will-change: transform;
+  overflow: hidden;
 }
+.roadmap-card:hover .nf-shine { opacity: 1; }
 
 .roadmap-card:active { cursor: grabbing; }
 
@@ -2776,6 +2781,8 @@ let trackerStatusFilter = "all";
 let trackerPriorityFilter = "all";
 let trackerAreaFilter = "all";
 let trackerView = "netflix"; // "netflix" | "simple"
+let roadmapView = "card"; // "card" | "simple"
+let promptView = "card"; // "card" | "simple"
 
 function getFilteredTickets() {
   let list = [...DATA.tickets];
@@ -3394,6 +3401,37 @@ const PROVIDERS = {
   ], hasKey: () => hasOpenAIKey },
 };
 
+function setPromptView(view) {
+  promptView = view;
+  renderPromptLab();
+}
+
+function renderPromptSidebarCards(openTickets) {
+  if (openTickets.length === 0) return '<div class="empty-state"><div class="empty-state-sub">No open tickets. Create one in the Tracker.</div></div>';
+  return openTickets.map(t => `
+    <div class="prompt-ticket-card${selectedPromptTicket === t.id ? " selected" : ""}" onclick="selectPromptTicket('${t.id}')">
+      ${t.image ? `<img class="prompt-ticket-thumb" src="data:image/png;base64,${t.image}" alt="" loading="lazy" />` : ``}
+      <div style="display:flex;gap:6px;align-items:center;margin-bottom:4px;flex-wrap:wrap;">
+        <span class="badge badge-${t.type}" style="font-size:9px">${esc(t.type)}</span>
+        <span class="badge badge-${t.priority}" style="font-size:9px">${esc(t.priority)}</span>
+        ${t.area ? `<span class="badge badge-area" style="font-size:9px">${esc(getAreaLabel(t.area))}</span>` : ""}
+      </div>
+      <div class="prompt-ticket-name">${esc(t.title)}</div>
+      ${t.description ? `<div class="prompt-ticket-desc">${esc(t.description)}</div>` : ""}
+    </div>
+  `).join("");
+}
+
+function renderPromptSidebarList(openTickets) {
+  if (openTickets.length === 0) return '<div class="empty-state"><div class="empty-state-sub">No open tickets. Create one in the Tracker.</div></div>';
+  return `<div class="simple-list">${openTickets.map(t => `
+    <div class="simple-row${selectedPromptTicket === t.id ? " simple-selected" : ""}" onclick="selectPromptTicket('${t.id}')">
+      <div class="simple-priority p-${t.priority}"></div>
+      <div class="simple-title">${esc(t.title)}</div>
+      <span class="badge badge-${t.type}" style="font-size:9px">${esc(t.type)}</span>
+    </div>`).join("")}</div>`;
+}
+
 function renderPromptLab() {
   const openTickets = DATA.tickets.filter(t => t.status !== "done");
   const selectedTicket = selectedPromptTicket ? DATA.tickets.find(t => t.id === selectedPromptTicket) : null;
@@ -3408,25 +3446,25 @@ function renderPromptLab() {
   const providerModels = PROVIDERS[selectedProvider].models;
 
   document.getElementById("page-prompts").innerHTML = `
-    <div class="page-title">Prompt Lab</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div class="page-title">Prompt Lab</div>
+        <div class="tracker-view-toggle">
+          <button class="tracker-view-btn${promptView === "card" ? " active" : ""}" onclick="setPromptView('card')" title="Card View">
+            <svg viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg>
+          </button>
+          <button class="tracker-view-btn${promptView === "simple" ? " active" : ""}" onclick="setPromptView('simple')" title="List View">
+            <svg viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="2" width="14" height="2.5" rx="1"/><rect x="1" y="6.75" width="14" height="2.5" rx="1"/><rect x="1" y="11.5" width="14" height="2.5" rx="1"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
     <div class="page-subtitle">AI-powered prompts for Claude Code — informed by your Knowledge Base</div>
 
     <div class="prompt-layout">
       <div class="prompt-sidebar">
         <div class="section-title">Open Tickets</div>
-        ${openTickets.length === 0 ? '<div class="empty-state"><div class="empty-state-sub">No open tickets. Create one in the Tracker.</div></div>' :
-          openTickets.map(t => `
-            <div class="prompt-ticket-card${selectedPromptTicket === t.id ? " selected" : ""}" onclick="selectPromptTicket('${t.id}')">
-              ${t.image ? `<img class="prompt-ticket-thumb" src="data:image/png;base64,${t.image}" alt="" loading="lazy" />` : ``}
-              <div style="display:flex;gap:6px;align-items:center;margin-bottom:4px;flex-wrap:wrap;">
-                <span class="badge badge-${t.type}" style="font-size:9px">${esc(t.type)}</span>
-                <span class="badge badge-${t.priority}" style="font-size:9px">${esc(t.priority)}</span>
-                ${t.area ? `<span class="badge badge-area" style="font-size:9px">${esc(getAreaLabel(t.area))}</span>` : ""}
-              </div>
-              <div class="prompt-ticket-name">${esc(t.title)}</div>
-              ${t.description ? `<div class="prompt-ticket-desc">${esc(t.description)}</div>` : ""}
-            </div>
-          `).join("")}
+        ${promptView === "card" ? renderPromptSidebarCards(openTickets) : renderPromptSidebarList(openTickets)}
       </div>
 
       <div class="prompt-main">
@@ -4406,7 +4444,12 @@ import { loadFlow, saveFlow } from "../storage/flows.js";</code></pre>
 }
 
 // === ROADMAP ===
-function renderRoadmap() {
+function setRoadmapView(view) {
+  roadmapView = view;
+  renderRoadmap();
+}
+
+function renderRoadmapKanban() {
   const cols = ["open", "progress", "review", "done"];
   const labels = { open: "Backlog", progress: "In Progress", review: "In Review", done: "Completed" };
 
@@ -4416,48 +4459,89 @@ function renderRoadmap() {
     if (grouped[t.status]) grouped[t.status].push(t);
   });
 
-  // Sort each column by priority
   const pw = { critical: 0, high: 1, medium: 2, low: 3 };
   cols.forEach(c => grouped[c].sort((a, b) => pw[a.priority] - pw[b.priority]));
 
+  return `<div class="roadmap-cols">
+    ${cols.map(col => `
+      <div class="roadmap-col">
+        <div class="roadmap-col-header">
+          ${labels[col]}
+          <span class="roadmap-count">${grouped[col].length}</span>
+        </div>
+        <div class="roadmap-cards" data-status="${col}">
+          ${grouped[col].length === 0 ? `<div class="empty-state" style="padding:24px 12px"><div class="empty-state-sub">No items</div></div>` :
+            grouped[col].map(t => `
+              <div class="roadmap-card" draggable="true" data-ticket-id="${t.id}" onclick="openTicketDetail('${t.id}')">
+                ${t.image ? `<img class="roadmap-card-image" src="data:image/png;base64,${t.image}" alt="" loading="lazy" />` : ``}
+                <div class="roadmap-card-title">${esc(t.title)}</div>
+                <div class="roadmap-card-meta">
+                  <span class="badge badge-${t.type}" style="font-size:9px">${esc(t.type)}</span>
+                  <span class="badge badge-${t.priority}" style="font-size:9px">${esc(t.priority)}</span>
+                  ${t.area ? `<span class="badge badge-area" style="font-size:9px">${esc(getAreaLabel(t.area))}</span>` : ""}
+                  ${t.assignee ? `<span style="font-size:10px;color:var(--muted);margin-left:auto">${esc(t.assignee)}</span>` : ""}
+                </div>
+                <div class="nf-shine"></div>
+              </div>
+            `).join("")}
+        </div>
+      </div>
+    `).join("")}
+  </div>`;
+}
+
+function renderRoadmapListView() {
+  const statusLabel = { open: "Backlog", progress: "In Progress", review: "In Review", done: "Completed" };
+  const pw = { critical: 0, high: 1, medium: 2, low: 3 };
+  const tickets = [...DATA.tickets].sort((a, b) => {
+    const ss = { progress: 0, open: 1, review: 2, done: 3 };
+    const sd = (ss[a.status] ?? 9) - (ss[b.status] ?? 9);
+    if (sd !== 0) return sd;
+    return pw[a.priority] - pw[b.priority];
+  });
+  if (tickets.length === 0) {
+    return `
+      <div class="empty-state">
+        <div class="empty-state-icon"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M9 12h6M12 9v6"/></svg></div>
+        <div class="empty-state-title">No tickets yet</div>
+        <div class="empty-state-sub">Create your first ticket to start tracking work.</div>
+      </div>`;
+  }
+  return `<div class="simple-list">${tickets.map(t => `
+    <div class="simple-row${t.status === "done" ? " simple-done" : ""}" onclick="openTicketDetail('${t.id}')">
+      <div class="simple-priority p-${t.priority}"></div>
+      <div class="simple-title">${esc(t.title)}</div>
+      <span class="simple-status simple-status-${t.status}">${statusLabel[t.status] || t.status}</span>
+    </div>`).join("")}</div>`;
+}
+
+function renderRoadmap() {
   document.getElementById("page-roadmap").innerHTML = `
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
-      <div class="page-title">Roadmap</div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div class="page-title">Roadmap</div>
+        <div class="tracker-view-toggle">
+          <button class="tracker-view-btn${roadmapView === "card" ? " active" : ""}" onclick="setRoadmapView('card')" title="Card View">
+            <svg viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg>
+          </button>
+          <button class="tracker-view-btn${roadmapView === "simple" ? " active" : ""}" onclick="setRoadmapView('simple')" title="List View">
+            <svg viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="2" width="14" height="2.5" rx="1"/><rect x="1" y="6.75" width="14" height="2.5" rx="1"/><rect x="1" y="11.5" width="14" height="2.5" rx="1"/></svg>
+          </button>
+        </div>
+      </div>
       <button class="btn btn-primary" onclick="openNewTicketModal()">+ New Ticket</button>
     </div>
-    <div class="page-subtitle">Kanban board view of all work items</div>
+    <div class="page-subtitle">${roadmapView === "card" ? "Kanban board view of all work items" : "All work items \u2014 " + DATA.tickets.length + " total"}</div>
 
-    <div class="roadmap-cols">
-      ${cols.map(col => `
-        <div class="roadmap-col">
-          <div class="roadmap-col-header">
-            ${labels[col]}
-            <span class="roadmap-count">${grouped[col].length}</span>
-          </div>
-          <div class="roadmap-cards" data-status="${col}">
-            ${grouped[col].length === 0 ? `<div class="empty-state" style="padding:24px 12px"><div class="empty-state-sub">No items</div></div>` :
-              grouped[col].map(t => `
-                <div class="roadmap-card" draggable="true" data-ticket-id="${t.id}" onclick="openTicketDetail('${t.id}')">
-                  ${t.image ? `<img class="roadmap-card-image" src="data:image/png;base64,${t.image}" alt="" loading="lazy" />` : ``}
-                  <div class="roadmap-card-title">${esc(t.title)}</div>
-                  <div class="roadmap-card-meta">
-                    <span class="badge badge-${t.type}" style="font-size:9px">${esc(t.type)}</span>
-                    <span class="badge badge-${t.priority}" style="font-size:9px">${esc(t.priority)}</span>
-                    ${t.area ? `<span class="badge badge-area" style="font-size:9px">${esc(getAreaLabel(t.area))}</span>` : ""}
-                    ${t.assignee ? `<span style="font-size:10px;color:var(--muted);margin-left:auto">${esc(t.assignee)}</span>` : ""}
-                  </div>
-                </div>
-              `).join("")}
-          </div>
-        </div>
-      `).join("")}
+    <div id="roadmap-content">
+      ${roadmapView === "card" ? renderRoadmapKanban() : renderRoadmapListView()}
     </div>
   `;
 
-  // --- Bind drag-and-drop ---
-  initRoadmapDragDrop();
-  // --- Bind 3D tilt ---
-  initRoadmapTilt();
+  if (roadmapView === "card") {
+    initRoadmapDragDrop();
+    initRoadmapTilt();
+  }
 }
 
 // --- Roadmap drag-and-drop ---
@@ -4538,7 +4622,7 @@ function initRoadmapDragDrop() {
 // --- Roadmap 3D tilt (Apple TV style) ---
 function initRoadmapTilt() {
   const cards = document.querySelectorAll(".roadmap-card");
-  const MAX_TILT = 4; // degrees — subtle
+  const MAX_TILT = 4;
 
   cards.forEach(card => {
     card.addEventListener("mousemove", e => {
@@ -4550,6 +4634,10 @@ function initRoadmapTilt() {
       const rotateY = ((x - centerX) / centerX) * MAX_TILT;
       const rotateX = ((centerY - y) / centerY) * MAX_TILT;
       card.style.transform = `perspective(600px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(-1px)`;
+      const pctX = ((x / rect.width) * 100).toFixed(1);
+      const pctY = ((y / rect.height) * 100).toFixed(1);
+      card.style.setProperty("--shine-x", pctX + "%");
+      card.style.setProperty("--shine-y", pctY + "%");
     });
 
     card.addEventListener("mouseleave", () => {

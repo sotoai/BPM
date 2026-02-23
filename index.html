@@ -791,31 +791,105 @@ html, body {
 
 @keyframes spin { to { transform: rotate(360deg); } }
 
-.prompt-api-key-bar {
+.prompt-settings-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid color-mix(in srgb, var(--border) 10%, transparent);
+  border-radius: 6px;
+  background: var(--panel2);
+  color: var(--muted);
+  font-size: 15px;
+  cursor: pointer;
+  transition: all 150ms;
+  flex-shrink: 0;
+}
+
+.prompt-settings-btn:hover {
+  color: var(--text);
+  border-color: var(--focus);
+  background: color-mix(in srgb, var(--focus) 8%, var(--panel2));
+}
+
+.prompt-provider-select,
+.prompt-model-select {
+  padding: 5px 8px;
+  font-size: 11px;
+  color: var(--text);
+  background: var(--panel2);
+  border: 1px solid color-mix(in srgb, var(--border) 10%, transparent);
+  border-radius: 6px;
+  outline: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.prompt-provider-select:focus,
+.prompt-model-select:focus { border-color: var(--focus); }
+
+.settings-modal-section {
+  margin-bottom: 20px;
+}
+
+.settings-modal-section:last-child { margin-bottom: 0; }
+
+.settings-modal-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.settings-modal-row {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 12px;
-  background: color-mix(in srgb, var(--text) 3%, transparent);
-  border-radius: 8px;
-  font-size: 11px;
-  color: var(--muted);
 }
 
-.prompt-api-key-bar input {
+.settings-modal-row input {
   flex: 1;
   min-width: 0;
-  padding: 5px 8px;
-  font-size: 11px;
+  padding: 7px 10px;
+  font-size: 12px;
   font-family: ui-monospace, SFMono-Regular, monospace;
   color: var(--text);
   background: var(--panel2);
   border: 1px solid color-mix(in srgb, var(--border) 10%, transparent);
-  border-radius: 4px;
+  border-radius: 6px;
   outline: none;
 }
 
-.prompt-api-key-bar input:focus { border-color: var(--focus); }
+.settings-modal-row input:focus { border-color: var(--focus); }
+
+.settings-modal-hint {
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  color: var(--text);
+}
+
+.settings-modal-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.settings-modal-status .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--runPassed);
+}
+
+.settings-modal-status .dot.inactive {
+  background: color-mix(in srgb, var(--muted) 30%, transparent);
+}
 
 .prompt-ai-output {
   flex: 1;
@@ -2205,7 +2279,7 @@ function renderTracker() {
             </div>
           </div>
           <div class="ticket-actions">
-            <button class="btn-icon" onclick="event.stopPropagation();generatePromptForTicket('${t.id}')" title="Generate Claude Prompt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2l8 4.5v7L12 18l-8-4.5v-7z"/><path d="M12 18v4"/><path d="M12 2v8"/></svg></button>
+            <button class="btn-icon" onclick="event.stopPropagation();generatePromptForTicket('${t.id}')" title="Generate AI Prompt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2l8 4.5v7L12 18l-8-4.5v-7z"/><path d="M12 18v4"/><path d="M12 2v8"/></svg></button>
             <button class="btn-icon" onclick="event.stopPropagation();cycleStatus('${t.id}')" title="Advance Status"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="9 6 15 12 9 18"/></svg></button>
             <button class="btn-icon" onclick="event.stopPropagation();openEditTicketModal('${t.id}')" title="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z"/></svg></button>
           </div>
@@ -2501,7 +2575,7 @@ function openTicketDetail(id) {
     ` : ""}
 
     <div class="detail-actions">
-      <button class="btn btn-primary" onclick="generatePromptForTicket('${t.id}');closeDetail()">Generate Claude Prompt</button>
+      <button class="btn btn-primary" onclick="generatePromptForTicket('${t.id}');closeDetail()">Generate AI Prompt</button>
       <button class="btn" onclick="openEditTicketModal('${t.id}')">Edit</button>
       <button class="btn" onclick="cycleStatus('${t.id}');closeDetail()">Advance Status</button>
     </div>
@@ -2515,29 +2589,38 @@ let lastGeneratedPrompt = "";
 let promptIsLoading = false;
 let hasAnthropicKey = false;
 let anthropicKeyHint = "";
+let hasOpenAIKey = false;
+let openaiKeyHint = "";
+let selectedProvider = "anthropic";
+let selectedModel = "claude-sonnet-4-20250514";
+
+const PROVIDERS = {
+  anthropic: { label: "Anthropic", models: [
+    { id: "claude-sonnet-4-20250514", name: "Claude Sonnet 4" },
+    { id: "claude-haiku-4-20250414", name: "Claude Haiku 4" },
+  ], hasKey: () => hasAnthropicKey },
+  openai: { label: "OpenAI", models: [
+    { id: "gpt-4o", name: "GPT-4o" },
+    { id: "gpt-4o-mini", name: "GPT-4o Mini" },
+  ], hasKey: () => hasOpenAIKey },
+};
 
 function renderPromptLab() {
   const openTickets = DATA.tickets.filter(t => t.status !== "done");
   const selectedTicket = selectedPromptTicket ? DATA.tickets.find(t => t.id === selectedPromptTicket) : null;
 
   const outputContent = promptIsLoading
-    ? '<div class="prompt-loading"><div class="spinner"></div>Generating prompt with Claude\u2026</div>'
+    ? `<div class="prompt-loading"><div class="spinner"></div>Generating prompt with ${esc(PROVIDERS[selectedProvider].label)}\u2026</div>`
     : lastGeneratedPrompt
       ? simpleMarkdownToHtml(lastGeneratedPrompt)
       : '<span class="prompt-output-empty">Select a ticket to generate an AI-powered prompt for Claude Code.</span>';
 
+  const providerHasKey = PROVIDERS[selectedProvider].hasKey();
+  const providerModels = PROVIDERS[selectedProvider].models;
+
   document.getElementById("page-prompts").innerHTML = `
     <div class="page-title">Prompt Lab</div>
     <div class="page-subtitle">AI-powered prompts for Claude Code — informed by your Knowledge Base</div>
-
-    <div class="prompt-api-key-bar">
-      <span style="flex-shrink:0">\ud83d\udd11 Anthropic API Key:</span>
-      ${hasAnthropicKey
-        ? `<span style="font-family:monospace;letter-spacing:0.05em">${esc(anthropicKeyHint)}</span>
-           <button class="btn btn-sm" onclick="clearAnthropicKey()" style="font-size:10px;padding:3px 8px">Remove</button>`
-        : `<input type="password" id="api-key-input" placeholder="sk-ant-api03-..." />
-           <button class="btn btn-primary btn-sm" onclick="saveAnthropicKey()" style="font-size:10px;padding:3px 10px">Save</button>`}
-    </div>
 
     <div class="prompt-layout">
       <div class="prompt-sidebar">
@@ -2558,15 +2641,23 @@ function renderPromptLab() {
 
       <div class="prompt-main">
         <div class="prompt-controls">
+          <select class="prompt-provider-select" onchange="setProvider(this.value)">
+            ${Object.entries(PROVIDERS).map(([k, v]) => `<option value="${k}"${selectedProvider===k?" selected":""}>${v.label}</option>`).join("")}
+          </select>
+          <select class="prompt-model-select" onchange="setModel(this.value)">
+            ${providerModels.map(m => `<option value="${m.id}"${selectedModel===m.id?" selected":""}>${m.name}</option>`).join("")}
+          </select>
           <div class="prompt-type-tabs">
             ${["implement","fix","refactor","test","review"].map(p => `<button class="prompt-type-tab${promptType===p?" active":""}" onclick="setPromptType('${p}')">${p.charAt(0).toUpperCase()+p.slice(1)}</button>`).join("")}
           </div>
           <div style="flex:1"></div>
+          <button class="prompt-settings-btn" onclick="openPromptSettings()" title="API Key Settings">\u2699</button>
           <button class="btn btn-sm" onclick="copyText(lastGeneratedPrompt)" ${!lastGeneratedPrompt||promptIsLoading?"disabled":""}>Copy</button>
-          <button class="btn btn-primary btn-sm" onclick="generateAIPrompt()" ${!selectedPromptTicket||promptIsLoading||!hasAnthropicKey?"disabled":""}>
-            ${promptIsLoading ? "Generating\u2026" : "Generate with AI"}
+          <button class="btn btn-primary btn-sm" onclick="generateAIPrompt()" ${!selectedPromptTicket||promptIsLoading||!providerHasKey?"disabled":""}>
+            ${promptIsLoading ? "Generating\u2026" : "Generate"}
           </button>
         </div>
+        ${!providerHasKey ? `<div style="font-size:11px;color:var(--runFailed);padding:4px 0;">No ${PROVIDERS[selectedProvider].label} API key configured. Click \u2699 to add one.</div>` : ""}
 
         <div class="prompt-ai-output" id="prompt-output">
           ${outputContent}
@@ -2604,28 +2695,110 @@ function setPromptType(type) {
   renderPromptLab();
 }
 
-function saveAnthropicKey() {
-  const input = document.getElementById("api-key-input");
-  const key = input?.value?.trim();
-  if (!key) return;
-  saveSettings({ anthropic_api_key: key });
-  hasAnthropicKey = true;
-  anthropicKeyHint = "sk-ant-\u2022\u2022\u2022" + key.slice(-4);
+function setProvider(value) {
+  selectedProvider = value;
+  selectedModel = PROVIDERS[value].models[0].id;
+  lastGeneratedPrompt = "";
   renderPromptLab();
-  showToast("API key saved");
 }
 
-function clearAnthropicKey() {
-  saveSettings({ anthropic_api_key: "" });
-  hasAnthropicKey = false;
-  anthropicKeyHint = "";
+function setModel(value) {
+  selectedModel = value;
+}
+
+function openPromptSettings() {
+  const renderSettingsContent = () => {
+    const anthropicSection = hasAnthropicKey
+      ? `<div class="settings-modal-row">
+           <div class="settings-modal-status"><span class="dot"></span> Connected</div>
+           <span class="settings-modal-hint">${esc(anthropicKeyHint)}</span>
+           <button class="btn btn-sm" onclick="clearProviderKey('anthropic')" style="font-size:10px;padding:3px 8px">Remove</button>
+         </div>`
+      : `<div class="settings-modal-row">
+           <input type="password" id="anthropic-key-input" placeholder="sk-ant-api03-..." />
+           <button class="btn btn-primary btn-sm" onclick="saveProviderKey('anthropic')" style="font-size:10px;padding:3px 10px">Save</button>
+         </div>`;
+
+    const openaiSection = hasOpenAIKey
+      ? `<div class="settings-modal-row">
+           <div class="settings-modal-status"><span class="dot"></span> Connected</div>
+           <span class="settings-modal-hint">${esc(openaiKeyHint)}</span>
+           <button class="btn btn-sm" onclick="clearProviderKey('openai')" style="font-size:10px;padding:3px 8px">Remove</button>
+         </div>`
+      : `<div class="settings-modal-row">
+           <input type="password" id="openai-key-input" placeholder="sk-..." />
+           <button class="btn btn-primary btn-sm" onclick="saveProviderKey('openai')" style="font-size:10px;padding:3px 10px">Save</button>
+         </div>`;
+
+    return `
+      <div class="modal-header">
+        <div class="modal-title">Prompt Lab Settings</div>
+        <button class="modal-close" onclick="closeModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="settings-modal-section">
+          <div class="settings-modal-label">Anthropic API Key</div>
+          ${anthropicSection}
+        </div>
+        <div class="settings-modal-section">
+          <div class="settings-modal-label">OpenAI API Key</div>
+          ${openaiSection}
+        </div>
+        <div style="font-size:10px;color:var(--muted);margin-top:12px;line-height:1.5;">
+          API keys are stored securely on the server and never exposed to the browser. Only a masked hint is displayed.
+        </div>
+      </div>
+    `;
+  };
+
+  openModal(renderSettingsContent());
+
+  // Store re-render function globally so save/clear can refresh the modal
+  window._refreshSettingsModal = () => {
+    modalEl.innerHTML = renderSettingsContent();
+  };
+}
+
+function saveProviderKey(provider) {
+  const inputId = provider === "anthropic" ? "anthropic-key-input" : "openai-key-input";
+  const input = document.getElementById(inputId);
+  const key = input?.value?.trim();
+  if (!key) return;
+
+  saveSettings({ [provider + "_api_key"]: key });
+
+  if (provider === "anthropic") {
+    hasAnthropicKey = true;
+    anthropicKeyHint = "sk-ant-\u2022\u2022\u2022" + key.slice(-4);
+  } else {
+    hasOpenAIKey = true;
+    openaiKeyHint = "sk-\u2022\u2022\u2022" + key.slice(-4);
+  }
+
+  showToast(`${PROVIDERS[provider].label} API key saved`);
+  if (window._refreshSettingsModal) window._refreshSettingsModal();
   renderPromptLab();
-  showToast("API key removed");
+}
+
+function clearProviderKey(provider) {
+  saveSettings({ [provider + "_api_key"]: "" });
+
+  if (provider === "anthropic") {
+    hasAnthropicKey = false;
+    anthropicKeyHint = "";
+  } else {
+    hasOpenAIKey = false;
+    openaiKeyHint = "";
+  }
+
+  showToast(`${PROVIDERS[provider].label} API key removed`);
+  if (window._refreshSettingsModal) window._refreshSettingsModal();
+  renderPromptLab();
 }
 
 async function generateAIPrompt() {
   const ticket = selectedPromptTicket ? DATA.tickets.find(t => t.id === selectedPromptTicket) : null;
-  if (!ticket || !hasAnthropicKey) return;
+  if (!ticket || !PROVIDERS[selectedProvider].hasKey()) return;
 
   promptIsLoading = true;
   lastGeneratedPrompt = "";
@@ -2639,6 +2812,8 @@ async function generateAIPrompt() {
       method: "POST",
       headers: JSON_HEADERS,
       body: JSON.stringify({
+        provider: selectedProvider,
+        model: selectedModel,
         system: systemPrompt,
         messages: [{ role: "user", content: userMessage }],
       }),
@@ -2652,7 +2827,8 @@ async function generateAIPrompt() {
     }
 
     // Log activity
-    const act = { action: "prompt", ticketId: ticket.id, title: `AI ${promptType} prompt: ${ticket.title}`, time: now() };
+    const providerLabel = PROVIDERS[selectedProvider].label;
+    const act = { action: "prompt", ticketId: ticket.id, title: `AI ${promptType} prompt (${providerLabel}): ${ticket.title}`, time: now() };
     addActivity(act.action, act.ticketId, act.title);
     apiUpdateTicket(ticket.id, { updatedAt: ticket.updatedAt }, act);
   } catch (err) {
@@ -3421,6 +3597,8 @@ function initRoadmapTilt() {
   themeSelect.value = settings.theme || "marshmallow";
   hasAnthropicKey = settings.hasAnthropicKey || false;
   anthropicKeyHint = settings.anthropicKeyHint || "";
+  hasOpenAIKey = settings.hasOpenAIKey || false;
+  openaiKeyHint = settings.openaiKeyHint || "";
 
   // Initial render
   renderDashboard();

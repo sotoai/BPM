@@ -314,11 +314,15 @@ const server = http.createServer(async (req, res) => {
     if (pathname === "/api/settings" && req.method === "GET") {
       const theme = stmts.getSetting.get("theme");
       const apiKeyRow = stmts.getSetting.get("anthropic_api_key");
+      const openaiKeyRow = stmts.getSetting.get("openai_api_key");
       const hasApiKey = !!(apiKeyRow?.value);
+      const hasOpenAIKey = !!(openaiKeyRow?.value);
       sendJSON(res, 200, {
         theme: theme ? theme.value : "marshmallow",
         hasAnthropicKey: hasApiKey,
         anthropicKeyHint: hasApiKey ? "sk-ant-•••" + apiKeyRow.value.slice(-4) : "",
+        hasOpenAIKey,
+        openaiKeyHint: hasOpenAIKey ? "sk-•••" + openaiKeyRow.value.slice(-4) : "",
       });
       return;
     }
@@ -333,56 +337,125 @@ const server = http.createServer(async (req, res) => {
           db.prepare("DELETE FROM settings WHERE key = 'anthropic_api_key'").run();
         }
       }
+      if (body.openai_api_key !== undefined) {
+        if (body.openai_api_key) {
+          stmts.upsertSetting.run("openai_api_key", body.openai_api_key);
+        } else {
+          db.prepare("DELETE FROM settings WHERE key = 'openai_api_key'").run();
+        }
+      }
       sendJSON(res, 200, { ok: true });
       return;
     }
 
-    // --- AI Prompt Generation (proxy to Anthropic) ---
+    // --- AI Prompt Generation (proxy to Anthropic / OpenAI) ---
     if (pathname === "/api/ai/prompt" && req.method === "POST") {
       const body = await parseBody(req);
-      const apiKey = body.apiKey || (stmts.getSetting.get("anthropic_api_key")?.value);
-      if (!apiKey) {
-        sendJSON(res, 400, { error: "No Anthropic API key configured. Add one in the Prompt Lab settings." });
-        return;
-      }
+      const provider = body.provider || "anthropic";
+      const model = body.model;
 
-      const payload = JSON.stringify({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 1024,
-        system: body.system || "",
-        messages: body.messages || [],
-      });
+      let result;
 
-      const result = await new Promise((resolve, reject) => {
-        const apiReq = https.request({
-          hostname: "api.anthropic.com",
-          path: "/v1/messages",
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-api-key": apiKey,
-            "anthropic-version": "2023-06-01",
-          },
-        }, (apiRes) => {
-          let data = "";
-          apiRes.on("data", (chunk) => { data += chunk; });
-          apiRes.on("end", () => {
-            try {
-              const parsed = JSON.parse(data);
-              if (apiRes.statusCode >= 400) {
-                resolve({ error: parsed.error?.message || `API error ${apiRes.statusCode}`, status: apiRes.statusCode });
-              } else {
-                resolve({ ok: true, content: parsed.content?.[0]?.text || "", usage: parsed.usage });
-              }
-            } catch (e) {
-              resolve({ error: "Failed to parse API response" });
-            }
-          });
+      if (provider === "openai") {
+        // --- OpenAI ---
+        const apiKey = stmts.getSetting.get("openai_api_key")?.value;
+        if (!apiKey) {
+          sendJSON(res, 400, { error: "No OpenAI API key configured. Add one in the Prompt Lab settings." });
+          return;
+        }
+
+        const oaiMessages = [];
+        if (body.system) oaiMessages.push({ role: "system", content: body.system });
+        for (const m of (body.messages || [])) {
+          oaiMessages.push({ role: m.role, content: m.content });
+        }
+
+        const payload = JSON.stringify({
+          model: model || "gpt-4o",
+          max_tokens: 1024,
+          messages: oaiMessages,
         });
-        apiReq.on("error", (e) => resolve({ error: e.message }));
-        apiReq.write(payload);
-        apiReq.end();
-      });
+
+        result = await new Promise((resolve) => {
+          const apiReq = https.request({
+            hostname: "api.openai.com",
+            path: "/v1/chat/completions",
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${apiKey}`,
+            },
+          }, (apiRes) => {
+            let data = "";
+            apiRes.on("data", (chunk) => { data += chunk; });
+            apiRes.on("end", () => {
+              try {
+                const parsed = JSON.parse(data);
+                if (apiRes.statusCode >= 400) {
+                  resolve({ error: parsed.error?.message || `API error ${apiRes.statusCode}`, status: apiRes.statusCode });
+                } else {
+                  resolve({
+                    ok: true,
+                    content: parsed.choices?.[0]?.message?.content || "",
+                    usage: parsed.usage,
+                  });
+                }
+              } catch (e) {
+                resolve({ error: "Failed to parse OpenAI response" });
+              }
+            });
+          });
+          apiReq.on("error", (e) => resolve({ error: e.message }));
+          apiReq.write(payload);
+          apiReq.end();
+        });
+
+      } else {
+        // --- Anthropic (default) ---
+        const apiKey = body.apiKey || (stmts.getSetting.get("anthropic_api_key")?.value);
+        if (!apiKey) {
+          sendJSON(res, 400, { error: "No Anthropic API key configured. Add one in the Prompt Lab settings." });
+          return;
+        }
+
+        const payload = JSON.stringify({
+          model: model || "claude-sonnet-4-20250514",
+          max_tokens: 1024,
+          system: body.system || "",
+          messages: body.messages || [],
+        });
+
+        result = await new Promise((resolve) => {
+          const apiReq = https.request({
+            hostname: "api.anthropic.com",
+            path: "/v1/messages",
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-api-key": apiKey,
+              "anthropic-version": "2023-06-01",
+            },
+          }, (apiRes) => {
+            let data = "";
+            apiRes.on("data", (chunk) => { data += chunk; });
+            apiRes.on("end", () => {
+              try {
+                const parsed = JSON.parse(data);
+                if (apiRes.statusCode >= 400) {
+                  resolve({ error: parsed.error?.message || `API error ${apiRes.statusCode}`, status: apiRes.statusCode });
+                } else {
+                  resolve({ ok: true, content: parsed.content?.[0]?.text || "", usage: parsed.usage });
+                }
+              } catch (e) {
+                resolve({ error: "Failed to parse API response" });
+              }
+            });
+          });
+          apiReq.on("error", (e) => resolve({ error: e.message }));
+          apiReq.write(payload);
+          apiReq.end();
+        });
+      }
 
       if (result.error) {
         sendJSON(res, result.status || 500, { error: result.error });

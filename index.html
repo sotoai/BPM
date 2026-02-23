@@ -2905,17 +2905,17 @@ function buildAIUserMessage(ticket, type) {
 
 function getKBContextForArea(area) {
   const ctx = {
-    login:      "Login Screen: PIN-based local auth, session management, splash screen, lockout after failed attempts. No remote auth server. Key concern: PIN storage security, session timeout handling.",
-    agents:     "Agents: AI personas with classifications (Observer, Analyst, Orchestrator, Operator, Archivist). Managed by a dedicated server on port 3009 via REST API. Each agent has capabilities, memory settings, behavior config, and collaborator links. Agent nodes in flows reference agents by ID. Key files: agents.js, agentEditor.js, agentsClient.js.",
-    flows:      "Flows & Canvas: Visual workflow editor with infinite pan/zoom canvas. Nodes are placed and connected with edges. SubFlows embed other flows as reusable steps. Inspector panel has Properties, Library, and Agents tabs. Keyboard shortcuts: Space+drag to pan, Ctrl/Cmd+scroll to zoom, F to reset zoom, Shift to reveal thumbnails/ports, Tab for flow nav, Backspace/Delete to remove selected, Ctrl/Cmd+Z/Shift+Z for undo/redo, Ctrl/Cmd+S to save, Shift+drag for axis lock. State managed through central dispatch/reduce store. Key files: editor.js, dragCreate.js, nodeView.js, pan.js, camera.js, schema.js.",
-    data:       "Data: Local-first data management \u2014 connections to external sources, file uploads, knowledge bases for RAG. All files stored locally. Data preview for inspecting contents before use in flows. Key files: storage/flows.js and the data management UI components.",
-    interfaces: "Interfaces: Visual UI builder for creating front-ends connected to flows. Grid/flex layout, pre-built components (inputs, buttons, displays), and live preview. Allows non-technical users to interact with complex flows through simple forms.",
-    community:  "Community: Marketplace for sharing flows/agents/templates, threaded discussions, personal storefronts (My Store), ratings and reviews, search/filter. Features 3D tilt card effects and collapsible categories. Key files: community.js, communityMarketplace.js, communityMyStore.js.",
-    showcase:   "Showcase: Curated gallery of community-built apps. Grid layout with full-screen viewer, featured picks, and category browsing. Designed to inspire and demonstrate platform capabilities.",
+    login:      "Login Screen: PIN-based local auth, session management, splash screen with rotating philosophical quotes and usage tips, lockout after failed attempts. No remote auth server. Key concern: PIN storage security, session timeout handling.",
+    agents:     "Agents: Logical actors (local model, remote model, or deterministic tool) with classifications (Observer, Analyst, Orchestrator, Operator, Archivist). Agents do not own flows; flows invoke agents. Managed by a dedicated server on port 3009 via REST API. Each agent has capabilities, memory settings, behavior config, and collaborator links. Agent nodes in flows reference agents by ID.",
+    flows:      "Flows & Canvas: A flow is a declarative graph that defines context ingress, transformation, policy boundaries, routing, and computation. Flows are long-lived artifacts, not ephemeral sessions. Execution belongs to the runtime server, not the UI. Visual editor with infinite pan/zoom canvas, SubFlow nesting, and Inspector panel (Properties, Library, Agents tabs). Node taxonomy: Input, Transform, Masking, Model, Memory, Routing, Output, Signal. Masking is first-class \u2014 a structural boundary between raw context and computation. Keyboard shortcuts: Space+drag to pan, Ctrl/Cmd+scroll to zoom, F to reset zoom, Shift to reveal thumbnails/ports, Tab for flow nav, Backspace/Delete to remove selected, Ctrl/Cmd+Z/Shift+Z for undo/redo, Ctrl/Cmd+S to save, Shift+drag for axis lock.",
+    data:       "Data: Local-first data management \u2014 connections to external sources, file uploads, knowledge bases for RAG. All files stored locally. Data preview for inspecting contents before use in flows.",
+    interfaces: "Interfaces: A presentation layer bound to flows. Logic lives in flows, not in UI. Visual builder with grid/flex layout, pre-built components (inputs, buttons, displays), and live preview. Allows non-technical users to interact with complex flows through simple forms and dashboards.",
+    community:  "Community & Ecosystem: BentoBase is a publishing and exchange layer. Marketplace is a monetization layer where creators sell or license agents, flows, interfaces, and artifacts. Enterprises procure vetted components. Every shared item ships with provenance, permissions, and an inspectable graph. Discussion, My Store, ratings/reviews, search/filter. Features 3D tilt card effects.",
+    showcase:   "Showcase: A browsable gallery of published artifacts and experiences \u2014 dashboards, interactive films, games, music, educational applications, templates, and personal uploads \u2014 meant to be experienced first, inspected second. Full-screen viewer, featured picks, category browsing.",
     settings:   "Settings: API provider configuration (OpenAI, Anthropic, local models), backend service connections, MCP server management, user account/profile, and theme selection. All settings persist locally.",
-    security:   "Security: Sovereignty-first model \u2014 all data local, no telemetry, opt-in remote services. Key concerns: PIN storage, API key encryption at rest, input sanitization (XSS prevention), Electron sandboxing, Content Security Policy headers.",
-    structure:  "App Structure: Vanilla JS with ES modules, no frameworks. Layered architecture (UI > Canvas > State > Graph > Runtime > Storage > API). Single CSS file with custom properties for theming. Electron packaging for desktop. No build step required for development.",
-    ux:         "UX & Design: 6 themes using CSS custom properties. Consistent 44px header, 11px uppercase tab labels, 150ms transitions, color-mix() for transparency. Empty states with centered icon+message. 6px themed scrollbars. All components reference theme variables, never hard-coded colors.",
+    security:   "Security: Sovereignty-first model \u2014 all data local, no telemetry, opt-in remote services. Every tool call is declared, scoped, and enforceable. Permissions, data boundaries, and allowed operations are part of the graph. Inspectable provenance on every artifact. Key concerns: PIN storage, API key encryption at rest, input sanitization (XSS prevention), Electron sandboxing, CSP headers.",
+    structure:  "App Structure: Vanilla JS with ES modules, no frameworks. MCP-native \u2014 treats Model Context Protocol as the default contract for tool access, context exchange, and agent interoperability. Layered architecture (UI > Canvas > State > Graph > Runtime > Storage > API). Flows target MCP tools by contract for portable execution across environments. Single CSS file with custom properties for theming. Electron packaging for desktop.",
+    ux:         "UX & Design: Calm, modern, confident, and obvious. No 'AI magic' aesthetics. No hidden state. Clarity beats cleverness. 6 themes using CSS custom properties. Consistent 44px header, 11px uppercase tab labels, 150ms transitions, color-mix() for transparency. Empty states with centered icon+message. The UI teaches through plain language and consistent diagram grammar.",
     perf:       "Performance: Canvas rendering with DOM nodes (not canvas/WebGL). Potential concerns: large flow re-renders, memory with many nodes, DOM update batching, localStorage size limits, efficient edge routing calculations.",
     docs:       "Documentation: Knowledge base maintained in the BPM portal. Inline code comments follow JSDoc conventions where present. README covers setup and architecture. No external documentation site currently.",
     portal:     "Dev Dashboard (BPM): Separate self-contained portal for project management. SQLite-backed API server, ticket tracking, prompt generation, knowledge base, kanban roadmap. Fully independent from the BentoBase app \u2014 no shared code, imports, or data.",
@@ -2967,13 +2967,49 @@ function setKBSection(key) {
 function renderKBArchitecture() {
   document.getElementById("kb-content").innerHTML = `
     <h2>Architecture Overview</h2>
-    <p>BentoBase is a <strong>sovereignty-first AI flow editor</strong>. It lets users visually build AI workflows by connecting nodes on a canvas, define intelligent agents, and manage data — all without sending anything to the cloud unless they choose to.</p>
 
-    <h3>Core Principles</h3>
-    <p><strong>No frameworks.</strong> The app is built with plain JavaScript and standard web technologies. There are no third-party UI libraries like React or Vue. This keeps the codebase simple and under full control.</p>
+    <h3>What BentoBase Is</h3>
+    <p>BentoBase is a local-first, production-grade control plane for building and operating agentic systems with explicit, inspectable flows \u2014 and a shared ecosystem where those systems, artifacts, and outcomes can be exchanged.</p>
+    <p>It is a visual authoring and inspection environment where you compose flows as declarative graphs: how inputs enter, how context is transformed, where privacy boundaries are enforced, how models and tools are invoked, how memory is scoped, how routing decisions are made, and how outputs are delivered. Flows are long-lived artifacts, not ephemeral sessions. Execution belongs to the runtime server, not the UI.</p>
+    <p>BentoBase is also a publishing and exchange layer: a place where individuals, communities, and enterprises share agents, flows, and the outputs those designs produce \u2014 safely, visibly, and with clear provenance.</p>
+
+    <h3>Core Mission</h3>
+    <p>Operationalize agentic systems by making their logic explicit, constrainable, and auditable \u2014 then make that work composable and distributable so value can compound across a network.</p>
+    <p>BentoBase's job is not to "be smart." Its job is to make AI systems legible, governable, and trustworthy over time by forcing their behavior into visible structure, then enabling creators to publish what they build.</p>
+
+    <h3>Core Concepts</h3>
+    <table class="kb-table">
+      <thead><tr><th>Concept</th><th>Definition</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Agent</strong></td><td>A logical actor \u2014 local model, remote model, or deterministic tool. Agents do not own flows; flows invoke agents.</td></tr>
+        <tr><td><strong>Flow</strong></td><td>A declarative graph that defines context ingress, transformation, policy boundaries, routing, and computation.</td></tr>
+        <tr><td><strong>Runtime Server</strong></td><td>The executor that runs flows, enforces policy, manages state, and mediates access to models and tools.</td></tr>
+        <tr><td><strong>Interface</strong></td><td>A presentation layer bound to flows. Logic lives in flows, not in UI.</td></tr>
+        <tr><td><strong>Artifact</strong></td><td>A published output \u2014 dashboard, interactive film, game, music experience, educational app, dataset, or template \u2014 generated by or bound to flows.</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Non-Goals</h3>
+    <p>BentoBase is not a chat app, not a prompt playground, not a low-code toy, and not a model hosting platform. It does not hide complexity or "just make it work." If something works without being explainable, that is a product failure.</p>
+
+    <h3>Design Principles</h3>
+    <p><strong>No frameworks.</strong> The app is built with plain JavaScript and standard web technologies. No third-party UI libraries. This keeps the codebase simple and under full control.</p>
     <p><strong>Declarative nodes.</strong> Nodes on the canvas describe <em>what</em> should happen (metadata, labels, connections) but don't contain execution logic themselves. A separate runtime layer handles the actual processing.</p>
-    <p><strong>Data stays local.</strong> All user data — flows, agents, settings — is saved to local files on the user's machine. Cloud services are available but always opt-in and scoped to specific tasks.</p>
+    <p><strong>Data stays local.</strong> All user data \u2014 flows, agents, settings \u2014 is saved to local files on the user's machine. Cloud services are available but always opt-in and scoped to specific tasks.</p>
     <p><strong>Electron-ready.</strong> The app runs in a browser during development and can be packaged as a native desktop application using Electron.</p>
+    <p><strong>MCP-native.</strong> BentoBase treats the Model Context Protocol as the default contract for tool access, context exchange, and agent interoperability \u2014 so integrations are composable, governable, and portable across environments.</p>
+
+    <h3>MCP-Native Integration</h3>
+    <table class="kb-table">
+      <thead><tr><th>Principle</th><th>What it means</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Tooling as MCP</strong></td><td>Enterprise systems are accessed through MCP-native connectors that expose bounded capabilities as tools, not as opaque code paths.</td></tr>
+        <tr><td><strong>Portable Execution</strong></td><td>Flows target MCP tools by contract, enabling the same flow to run across dev, community, and enterprise environments with only connector substitution.</td></tr>
+        <tr><td><strong>Governed Access</strong></td><td>Every tool call is declared, scoped, and enforceable. Permissions, data boundaries, and allowed operations are part of the graph.</td></tr>
+        <tr><td><strong>Inspectable Provenance</strong></td><td>Each artifact and flow includes provenance metadata \u2014 what tools it can call, what data classes it can touch, what it emits, and who authored or modified it.</td></tr>
+        <tr><td><strong>Enterprise Readiness</strong></td><td>Designed to integrate with identity and access control, audit logging, policy enforcement, and existing systems of record.</td></tr>
+      </tbody>
+    </table>
 
     <h3>How the App is Organized</h3>
     <p>The app is built in layers, where each layer has a specific job:</p>
@@ -3197,7 +3233,7 @@ function renderKBFlowsCanvas() {
 function renderKBNodes() {
   document.getElementById("kb-content").innerHTML = `
     <h2>Node System</h2>
-    <p>Nodes are the building blocks of every flow. Each node represents a step in the workflow and has inputs (where data comes in) and outputs (where data goes out).</p>
+    <p>Nodes are the building blocks of every flow. Each node represents a step in the workflow and has inputs (where data comes in) and outputs (where data goes out). The stable taxonomy is: <strong>Input \u00b7 Transform \u00b7 Masking \u00b7 Model \u00b7 Memory \u00b7 Routing \u00b7 Output \u00b7 Signal</strong>.</p>
 
     <h3>Node Categories</h3>
     <table class="kb-table">
@@ -3206,7 +3242,7 @@ function renderKBNodes() {
         <tr><td><strong>Input</strong></td><td>Brings data into the flow from external sources</td><td>File input, API input, form input, sensor input</td></tr>
         <tr><td><strong>Signal</strong></td><td>Triggers the flow based on events or conditions</td><td>Network signal, system health check, external event</td></tr>
         <tr><td><strong>Transform</strong></td><td>Cleans, reshapes, or converts data passing through</td><td>Normalize, format conversion, extract fields, parse</td></tr>
-        <tr><td><strong>Masking</strong></td><td>Protects sensitive data by hiding or replacing it</td><td>Text anonymization, image redaction, token substitution</td></tr>
+        <tr><td><strong>Masking</strong></td><td>Protects sensitive data by hiding or replacing it. Masking is first-class: a structural boundary between raw context and computation. Downstream models should not see original sensitive data unless an explicit, permitted step allows it.</td><td>Text anonymization, image redaction, token substitution</td></tr>
         <tr><td><strong>Model</strong></td><td>Sends data to an AI model for processing</td><td>Local model, remote model (GPT, Claude), media generator</td></tr>
         <tr><td><strong>Memory</strong></td><td>Stores and retrieves information across interactions</td><td>Session memory, short-term memory, long-term memory</td></tr>
         <tr><td><strong>Routing</strong></td><td>Directs data down different paths based on conditions</td><td>Conditional routing, priority routing, weighted routing</td></tr>
@@ -3296,23 +3332,26 @@ function renderKBDataInterfaces() {
 function renderKBCommunityShowcase() {
   document.getElementById("kb-content").innerHTML = `
     <h2>Community & Showcase</h2>
-
-    <h3>Community</h3>
-    <p>The Community page is where BentoBase users connect, share, and collaborate. It has several sections:</p>
-    <pre><code>\u2022 Marketplace \u2014 Browse and discover shared flows, agents, and templates from other users
-\u2022 Discussion \u2014 Threaded conversations about best practices, troubleshooting, and ideas
-\u2022 My Store \u2014 A personal storefront where users can publish and manage their own shared items
-\u2022 Ratings & Reviews \u2014 Rate and review marketplace items to help the community find quality content
-\u2022 Search & Filter \u2014 Find items by category, tags, rating, or text search</code></pre>
-    <p>The marketplace supports 3D tilt effects on cards and collapsible category sections. User avatars show photo images when available.</p>
+    <p>BentoBase is not just an editor \u2014 it is a publishing and exchange layer where individuals, communities, and enterprises share agents, flows, and the outputs those designs produce.</p>
 
     <h3>Showcase</h3>
-    <p>The Showcase page is a curated gallery of applications and workflows built with BentoBase:</p>
-    <pre><code>\u2022 App Gallery \u2014 Grid of featured community-built applications
+    <p>A browsable gallery of published artifacts and experiences \u2014 dashboards, interactive films, games, music, educational applications, templates, and personal uploads \u2014 meant to be experienced first, inspected second.</p>
+    <pre><code>\u2022 App Gallery \u2014 Grid of featured community-built applications and experiences
 \u2022 Full-Screen Viewer \u2014 Immersive view of individual showcase items
 \u2022 Featured Apps \u2014 Highlighted picks chosen by the team
 \u2022 Categories \u2014 Browse by use case (productivity, creative, research, etc.)</code></pre>
-    <p>The showcase is meant to inspire users and demonstrate what's possible with the platform.</p>
+
+    <h3>Marketplace</h3>
+    <p>A monetization layer where creators can sell or license agents, flows, interfaces, and artifacts. Enterprises can procure vetted components. Organizations can publish internal catalogs with policy gating.</p>
+    <pre><code>\u2022 Browse & Discover \u2014 Find shared flows, agents, and templates from other users
+\u2022 Discussion \u2014 Threaded conversations about best practices, troubleshooting, and ideas
+\u2022 My Store \u2014 A personal storefront for publishing and managing shared items
+\u2022 Ratings & Reviews \u2014 Community-driven quality signals
+\u2022 Search & Filter \u2014 Find items by category, tags, rating, or text search</code></pre>
+    <p>The marketplace supports 3D tilt effects on cards and collapsible category sections. User avatars show photo images when available.</p>
+
+    <h3>Sharing Model</h3>
+    <p>Every shared item ships with provenance, permissions, and an inspectable graph. What it does is visible. What it touches is declared. What it costs is understandable. What it exports is explicit.</p>
 
     <h3>Key Files</h3>
     <p>Community features are implemented across <code>community.js</code>, <code>communityMarketplace.js</code>, and <code>communityMyStore.js</code> in the UI layer.</p>
@@ -3448,6 +3487,9 @@ function renderKBToneVoice() {
     <h3>Sovereignty Statement</h3>
     <p>The splash screen includes a dedicated "AI Sovereignty" note in the corner. It advises users to develop AI that is fully under their control \u2014 to know what models are used, when and how data travels, and to be in full agreement with every action AI performs. It links to the full source code download. This is not a legal disclaimer; it is a statement of values.</p>
 
+    <h3>Design and Tone (Canonical)</h3>
+    <p>Calm, modern, confident, and obvious. No "AI magic" aesthetics. No hidden state. No cute metaphors. Clarity beats cleverness. Motion is subtle and functional. The UI teaches through plain language and consistent diagram grammar.</p>
+
     <h3>Guiding Principles for New Content</h3>
     <p>When writing labels, messages, empty states, or any user-facing text in BentoBase, follow these principles:</p>
     <pre><code>\u2022 Use plain, human language \u2014 say "saved flows" not "persisted flow artifacts"
@@ -3455,10 +3497,14 @@ function renderKBToneVoice() {
 \u2022 Respect the user's intelligence \u2014 clear does not mean dumbed down
 \u2022 Avoid urgency and pressure \u2014 no countdowns, no "act now" language, no artificial scarcity
 \u2022 Prefer warmth over formality \u2014 conversational but not sloppy
-\u2022 Let the work speak for itself \u2014 the app earns trust through transparency, not marketing</code></pre>
+\u2022 Let the work speak for itself \u2014 the app earns trust through transparency, not marketing
+\u2022 No "AI magic" language \u2014 the system is explicit, not magical</code></pre>
 
     <h3>The Closing Tagline</h3>
     <p>"Build systems that deserve to exist." This phrase appears across the About page and Design Partners materials. It captures the aspiration: BentoBase is for people who care about what they build and how it affects others.</p>
+
+    <h3>Canonical One-Line Statement</h3>
+    <p>BentoBase is the MCP-native control plane and marketplace for agentic systems \u2014 where workflows are authored as explicit graphs, governed by policy, executed by a separate runtime, integrated with enterprise systems by contract, and published as shareable agents, flows, and interactive outputs.</p>
   `;
 }
 

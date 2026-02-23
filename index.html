@@ -663,6 +663,45 @@ html, body {
 
 .ticket-row:hover .ticket-actions { opacity: 1; }
 
+/* --- Ticket Images --- */
+.ticket-thumb {
+  width: 40px;
+  height: 40px;
+  border-radius: 6px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.detail-hero-image {
+  width: 100%;
+  max-height: 240px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--border) 10%, transparent);
+}
+
+.detail-image-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.roadmap-card-image {
+  width: 100%;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 6px;
+  margin-bottom: 8px;
+}
+
+.prompt-ticket-thumb {
+  width: 100%;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 6px;
+  margin-bottom: 6px;
+}
+
 /* --- Prompt Lab --- */
 .prompt-layout {
   display: grid;
@@ -1871,6 +1910,35 @@ function saveSettings(settings) {
   }).catch(err => console.warn("[BPM] Settings save failed:", err.message));
 }
 
+// --- Ticket Image Helpers ---
+function apiRegenerateImage(id) {
+  return fetch(`${API_BASE}/api/tickets/${encodeURIComponent(id)}/generate-image`, {
+    method: "POST", headers: JSON_HEADERS,
+  }).catch(err => console.warn("[BPM] Regenerate image failed:", err.message));
+}
+
+function pollForTicketImage(ticketId, maxAttempts = 15, intervalMs = 3000) {
+  let attempts = 0;
+  const poll = setInterval(async () => {
+    attempts++;
+    try {
+      const res = await fetch(`${API_BASE}/api/tickets/${encodeURIComponent(ticketId)}/image`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.image) {
+          clearInterval(poll);
+          const t = DATA.tickets.find(x => x.id === ticketId);
+          if (t) {
+            t.image = data.image;
+            renderCurrentPage();
+          }
+        }
+      }
+    } catch (e) { /* ignore */ }
+    if (attempts >= maxAttempts) clearInterval(poll);
+  }, intervalMs);
+}
+
 // Migrate localStorage data to server on first load
 async function migrateLocalStorage() {
   try {
@@ -2152,6 +2220,7 @@ function renderDashboard() {
                 recentTickets.map(t => `
                   <div class="activity-item" style="cursor:pointer" onclick="openTicketDetail('${t.id}')">
                     <div class="ticket-priority p-${t.priority}" style="width:3px;height:20px;border-radius:2px;margin-top:2px;flex-shrink:0"></div>
+                    ${t.image ? `<img style="width:24px;height:24px;border-radius:4px;object-fit:cover;flex-shrink:0" src="data:image/png;base64,${t.image}" alt="" loading="lazy" />` : ``}
                     <div style="flex:1;min-width:0">
                       <div class="activity-text" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(t.title)}</div>
                       <div class="activity-time">${esc(t.id)} \u00b7 ${formatTime(t.updatedAt || t.createdAt)}${t.area ? ` \u00b7 ${getAreaLabel(t.area)}` : ""}</div>
@@ -2268,6 +2337,7 @@ function renderTracker() {
       ` : tickets.map(t => `
         <div class="ticket-row${t.status === "done" ? " done-row" : ""}" onclick="openTicketDetail('${t.id}')">
           <div class="ticket-priority p-${t.priority}"></div>
+          ${t.image ? `<img class="ticket-thumb" src="data:image/png;base64,${t.image}" alt="" loading="lazy" />` : ``}
           <div class="ticket-body">
             <div class="ticket-title">${esc(t.title)}</div>
             <div class="ticket-meta">
@@ -2406,6 +2476,7 @@ function submitNewTicket() {
   const act = { action: "create", ticketId: ticket.id, title: `Created: ${ticket.title}`, time: now() };
   addActivity(act.action, act.ticketId, act.title);
   apiCreateTicket(ticket, act);
+  pollForTicketImage(ticket.id);
   closeModal();
   renderCurrentPage();
 }
@@ -2503,6 +2574,16 @@ function submitEditTicket(id) {
   renderCurrentPage();
 }
 
+async function regenerateTicketImage(id) {
+  const t = DATA.tickets.find(x => x.id === id);
+  if (!t) return;
+  t.image = "";
+  renderCurrentPage();
+  openTicketDetail(id);
+  await apiRegenerateImage(id);
+  pollForTicketImage(id);
+}
+
 function deleteTicket(id) {
   const t = DATA.tickets.find(x => x.id === id);
   if (!t) return;
@@ -2534,6 +2615,14 @@ function openTicketDetail(id) {
       </div>
       <button class="btn-icon" onclick="closeDetail()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
     </div>
+
+    ${t.image ? `
+    <div>
+      <img class="detail-hero-image" src="data:image/png;base64,${t.image}" alt="Ticket illustration" />
+      <div class="detail-image-actions">
+        <button class="btn btn-sm" onclick="regenerateTicketImage('${t.id}')" style="font-size:10px">Regenerate Image</button>
+      </div>
+    </div>` : ``}
 
     <div>
       <div class="detail-section-title">Description</div>
@@ -2628,6 +2717,7 @@ function renderPromptLab() {
         ${openTickets.length === 0 ? '<div class="empty-state"><div class="empty-state-sub">No open tickets. Create one in the Tracker.</div></div>' :
           openTickets.map(t => `
             <div class="prompt-ticket-card${selectedPromptTicket === t.id ? " selected" : ""}" onclick="selectPromptTicket('${t.id}')">
+              ${t.image ? `<img class="prompt-ticket-thumb" src="data:image/png;base64,${t.image}" alt="" loading="lazy" />` : ``}
               <div style="display:flex;gap:6px;align-items:center;margin-bottom:4px;flex-wrap:wrap;">
                 <span class="badge badge-${t.type}" style="font-size:9px">${esc(t.type)}</span>
                 <span class="badge badge-${t.priority}" style="font-size:9px">${esc(t.priority)}</span>
@@ -3583,6 +3673,7 @@ function renderRoadmap() {
             ${grouped[col].length === 0 ? `<div class="empty-state" style="padding:24px 12px"><div class="empty-state-sub">No items</div></div>` :
               grouped[col].map(t => `
                 <div class="roadmap-card" draggable="true" data-ticket-id="${t.id}" onclick="openTicketDetail('${t.id}')">
+                  ${t.image ? `<img class="roadmap-card-image" src="data:image/png;base64,${t.image}" alt="" loading="lazy" />` : ``}
                   <div class="roadmap-card-title">${esc(t.title)}</div>
                   <div class="roadmap-card-meta">
                     <span class="badge badge-${t.type}" style="font-size:9px">${esc(t.type)}</span>

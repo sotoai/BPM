@@ -61,6 +61,7 @@ db.exec(`
     subarea     TEXT DEFAULT '',
     assignee    TEXT DEFAULT '',
     files       TEXT DEFAULT '',
+    image       TEXT DEFAULT '',
     createdAt   TEXT NOT NULL,
     updatedAt   TEXT NOT NULL
   );
@@ -79,15 +80,19 @@ db.exec(`
   );
 `);
 
+// Migration: add image column if it doesn't exist (for existing databases)
+try { db.exec("ALTER TABLE tickets ADD COLUMN image TEXT DEFAULT ''"); } catch (e) { /* column already exists */ }
+
 // Prepared statements for performance
 const stmts = {
   allTickets:      db.prepare("SELECT * FROM tickets ORDER BY createdAt DESC"),
   getTicket:       db.prepare("SELECT * FROM tickets WHERE id = ?"),
-  insertTicket:    db.prepare(`INSERT INTO tickets (id, title, description, type, priority, status, area, subarea, assignee, files, createdAt, updatedAt)
-                               VALUES (@id, @title, @description, @type, @priority, @status, @area, @subarea, @assignee, @files, @createdAt, @updatedAt)`),
+  insertTicket:    db.prepare(`INSERT INTO tickets (id, title, description, type, priority, status, area, subarea, assignee, files, image, createdAt, updatedAt)
+                               VALUES (@id, @title, @description, @type, @priority, @status, @area, @subarea, @assignee, @files, @image, @createdAt, @updatedAt)`),
   updateTicket:    db.prepare(`UPDATE tickets SET title=@title, description=@description, type=@type, priority=@priority,
-                               status=@status, area=@area, subarea=@subarea, assignee=@assignee, files=@files, updatedAt=@updatedAt
+                               status=@status, area=@area, subarea=@subarea, assignee=@assignee, files=@files, image=@image, updatedAt=@updatedAt
                                WHERE id=@id`),
+  updateTicketImage: db.prepare("UPDATE tickets SET image = ? WHERE id = ?"),
   deleteTicket:    db.prepare("DELETE FROM tickets WHERE id = ?"),
   deleteAllTickets: db.prepare("DELETE FROM tickets"),
 
@@ -116,6 +121,7 @@ const bulkSync = db.transaction((data) => {
       subarea: t.subarea || "",
       assignee: t.assignee || "",
       files: t.files || "",
+      image: t.image || "",
       createdAt: t.createdAt || new Date().toISOString(),
       updatedAt: t.updatedAt || new Date().toISOString(),
     });
@@ -194,6 +200,74 @@ function matchRoute(method, pathname, pattern) {
 // ---------------------------------------------------------------------------
 let req_method = "";
 
+// --- Async ticket image generation (fire-and-forget) ---
+const AREA_LABELS = {
+  login: "Login Screen", agents: "Agents", flows: "Flows & Canvas", data: "Data Management",
+  interfaces: "Interfaces", community: "Community", showcase: "Showcase", settings: "Settings",
+  security: "App Security", structure: "App Structure", ux: "UX & Design", perf: "Performance",
+  docs: "Documentation", portal: "Dev Dashboard",
+};
+
+function generateTicketImage(ticketId, title, type, area) {
+  const apiKey = stmts.getSetting.get("openai_api_key")?.value;
+  if (!apiKey) {
+    console.log("[BPM] Skipping image generation — no OpenAI API key configured.");
+    return;
+  }
+
+  const typeMap = {
+    bug: "a broken mechanism or cracked ceramic object",
+    feature: "a new tool or blossoming cherry blossom element",
+    enhancement: "a polished or upgraded artifact with decorative detail",
+    refactor: "an organized arrangement of geometric shapes and patterns",
+    docs: "a scroll or open book with flowing calligraphic text",
+  };
+  const typeVisual = typeMap[type] || "a symbolic object";
+  const areaLabel = AREA_LABELS[area] || "";
+
+  const prompt = `A 2D Japanese flat illustration in ukiyo-e inspired style with clean bold outlines, flat color fills, and muted earth tones (indigo, vermillion, moss green, warm cream). No gradients, no 3D shading, no photorealism. The scene depicts ${typeVisual} representing the concept: "${title}"${areaLabel ? `, in the context of ${areaLabel}` : ""}. Minimal composition, negative space, subtle paper texture background. Square format, icon-like simplicity.`;
+
+  const payload = JSON.stringify({
+    model: "gpt-image-1",
+    prompt,
+    n: 1,
+    size: "1024x1024",
+    quality: "low",
+  });
+
+  const apiReq = https.request({
+    hostname: "api.openai.com",
+    path: "/v1/images/generations",
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${apiKey}`,
+    },
+  }, (apiRes) => {
+    let data = "";
+    apiRes.on("data", (chunk) => { data += chunk; });
+    apiRes.on("end", () => {
+      try {
+        const parsed = JSON.parse(data);
+        if (apiRes.statusCode >= 400) {
+          console.error("[BPM] Image generation API error:", parsed.error?.message || apiRes.statusCode);
+          return;
+        }
+        const b64 = parsed.data?.[0]?.b64_json;
+        if (b64) {
+          stmts.updateTicketImage.run(b64, ticketId);
+          console.log(`[BPM] Generated image for ticket ${ticketId}`);
+        }
+      } catch (e) {
+        console.error("[BPM] Failed to parse image generation response:", e.message);
+      }
+    });
+  });
+  apiReq.on("error", (e) => console.error("[BPM] Image generation request failed:", e.message));
+  apiReq.write(payload);
+  apiReq.end();
+}
+
 const server = http.createServer(async (req, res) => {
   // CORS preflight
   if (req.method === "OPTIONS") {
@@ -247,6 +321,7 @@ const server = http.createServer(async (req, res) => {
         subarea: t.subarea || "",
         assignee: t.assignee || "",
         files: t.files || "",
+        image: t.image || "",
         createdAt: t.createdAt || new Date().toISOString(),
         updatedAt: t.updatedAt || new Date().toISOString(),
       });
@@ -255,6 +330,9 @@ const server = http.createServer(async (req, res) => {
         stmts.trimActivity.run();
       }
       sendJSON(res, 201, stmts.getTicket.get(t.id));
+
+      // Fire-and-forget: generate ticket illustration asynchronously
+      generateTicketImage(t.id, t.title || "", t.type || "feature", t.area || "");
       return;
     }
 
@@ -276,6 +354,7 @@ const server = http.createServer(async (req, res) => {
           subarea: t.subarea ?? existing.subarea,
           assignee: t.assignee ?? existing.assignee,
           files: t.files ?? existing.files,
+          image: t.image ?? existing.image,
           updatedAt: t.updatedAt || new Date().toISOString(),
         });
         if (t._activity) {
@@ -300,6 +379,31 @@ const server = http.createServer(async (req, res) => {
           stmts.trimActivity.run();
         }
         sendJSON(res, 200, { ok: true, deleted: m.id });
+        return;
+      }
+    }
+
+    // POST /api/tickets/:id/generate-image — regenerate ticket illustration
+    {
+      const m = matchRoute("POST", pathname, "/api/tickets/:id/generate-image");
+      if (m) {
+        const existing = stmts.getTicket.get(m.id);
+        if (!existing) { sendJSON(res, 404, { error: "Ticket not found" }); return; }
+        // Clear existing image so frontend knows regeneration is in progress
+        stmts.updateTicketImage.run("", m.id);
+        generateTicketImage(m.id, existing.title, existing.type, existing.area);
+        sendJSON(res, 202, { ok: true, message: "Image generation started" });
+        return;
+      }
+    }
+
+    // GET /api/tickets/:id/image — lightweight image fetch for polling
+    {
+      const m = matchRoute("GET", pathname, "/api/tickets/:id/image");
+      if (m) {
+        const existing = stmts.getTicket.get(m.id);
+        if (!existing) { sendJSON(res, 404, { error: "Ticket not found" }); return; }
+        sendJSON(res, 200, { id: m.id, image: existing.image || "" });
         return;
       }
     }

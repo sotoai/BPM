@@ -29,8 +29,8 @@ import Database from "better-sqlite3";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const PORT = process.env.PORTAL_PORT || 3100;
-const DATA_DIR = path.join(__dirname, "data");
+const PORT = process.env.PORT || process.env.PORTAL_PORT || 3100;
+const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, "data");
 const DB_PATH = path.join(DATA_DIR, "portal.sqlite3");
 
 // ---------------------------------------------------------------------------

@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>BentoBase — Project Portal</title>
+<title>BPM — BentoBase Performance Manager</title>
 <style>
 /* ========================================
-   BentoBase Project Portal — Design System
+   BPM (BentoBase Performance Manager) — Design System
    ======================================== */
 
 /* --- Theme Tokens --- */
@@ -1662,7 +1662,7 @@ html, body {
 
 <script>
 // ============================================================
-// BentoBase Project Portal — Application Logic
+// BPM (BentoBase Performance Manager) — Application Logic
 // ============================================================
 
 // --- Data Layer (SQLite-backed via server API) ---
@@ -1675,7 +1675,7 @@ async function loadDataFromServer() {
     const res = await fetch(`${API_BASE}/api/data`);
     if (res.ok) return await res.json();
   } catch (e) {
-    console.warn("[Portal] Server fetch failed, falling back to localStorage:", e.message);
+    console.warn("[BPM] Server fetch failed, falling back to localStorage:", e.message);
   }
   // Fallback: if server is unreachable, try localStorage
   try {
@@ -1691,7 +1691,7 @@ function apiCreateTicket(ticket, activityEntry) {
   if (activityEntry) payload._activity = activityEntry;
   fetch(`${API_BASE}/api/tickets`, {
     method: "POST", headers: JSON_HEADERS, body: JSON.stringify(payload),
-  }).catch(err => console.warn("[Portal] Create failed:", err.message));
+  }).catch(err => console.warn("[BPM] Create failed:", err.message));
 }
 
 function apiUpdateTicket(id, fields, activityEntry) {
@@ -1699,21 +1699,21 @@ function apiUpdateTicket(id, fields, activityEntry) {
   if (activityEntry) payload._activity = activityEntry;
   fetch(`${API_BASE}/api/tickets/${encodeURIComponent(id)}`, {
     method: "PUT", headers: JSON_HEADERS, body: JSON.stringify(payload),
-  }).catch(err => console.warn("[Portal] Update failed:", err.message));
+  }).catch(err => console.warn("[BPM] Update failed:", err.message));
 }
 
 function apiDeleteTicket(id, activityEntry) {
   const payload = activityEntry ? { _activity: activityEntry } : {};
   fetch(`${API_BASE}/api/tickets/${encodeURIComponent(id)}`, {
     method: "DELETE", headers: JSON_HEADERS, body: JSON.stringify(payload),
-  }).catch(err => console.warn("[Portal] Delete failed:", err.message));
+  }).catch(err => console.warn("[BPM] Delete failed:", err.message));
 }
 
 // Bulk sync fallback (used for migration)
 function saveData(data) {
   fetch(`${API_BASE}/api/data`, {
     method: "PUT", headers: JSON_HEADERS, body: JSON.stringify(data),
-  }).catch(err => console.warn("[Portal] Save failed:", err.message));
+  }).catch(err => console.warn("[BPM] Save failed:", err.message));
 }
 
 async function loadSettingsFromServer() {
@@ -1727,7 +1727,7 @@ async function loadSettingsFromServer() {
 function saveSettings(settings) {
   fetch(`${API_BASE}/api/settings`, {
     method: "PUT", headers: JSON_HEADERS, body: JSON.stringify(settings),
-  }).catch(err => console.warn("[Portal] Settings save failed:", err.message));
+  }).catch(err => console.warn("[BPM] Settings save failed:", err.message));
 }
 
 // Migrate localStorage data to server on first load
@@ -1749,16 +1749,16 @@ async function migrateLocalStorage() {
     await fetch(`${API_BASE}/api/data`, {
       method: "PUT", headers: JSON_HEADERS, body: raw,
     });
-    console.log("[Portal] Migrated localStorage data to server.");
+    console.log("[BPM] Migrated localStorage data to server.");
 
     const savedTheme = localStorage.getItem("bb_portal_theme");
     if (savedTheme) saveSettings({ theme: savedTheme });
 
     localStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem("bb_portal_theme");
-    console.log("[Portal] Cleared legacy localStorage entries.");
+    console.log("[BPM] Cleared legacy localStorage entries.");
   } catch (e) {
-    console.warn("[Portal] Migration failed:", e.message);
+    console.warn("[BPM] Migration failed:", e.message);
   }
 }
 
@@ -1946,7 +1946,7 @@ function renderDashboard() {
 
   document.getElementById("page-dashboard").innerHTML = `
     <div class="page-title">Dashboard</div>
-    <div class="page-subtitle">BentoBase development overview</div>
+    <div class="page-subtitle">BentoBase performance &amp; development overview</div>
 
     <div class="dash-layout">
       <div class="health-sidebar">
@@ -2631,7 +2631,7 @@ function buildPrompt(ticket, type) {
   lines.push("");
   lines.push(divider);
   lines.push("");
-  lines.push("**Project:** BentoBase (Bento_Canvas)");
+  lines.push("**Project:** BentoBase (tracked via BPM)");
   lines.push("**Stack:** Vanilla JS, custom state store (dispatch/reduce), file-backed JSON persistence, CSS custom properties theming");
   lines.push("**Working Directory:** /Users/joshuasoto/Dropbox/Bento_Canvas/Bento_Canvas");
 
@@ -2655,7 +2655,7 @@ const KB_SECTIONS = {
 function renderKB() {
   document.getElementById("page-kb").innerHTML = `
     <div class="page-title">Knowledge Base</div>
-    <div class="page-subtitle">Canonical reference for the BentoBase codebase</div>
+    <div class="page-subtitle">Canonical reference for the BentoBase codebase &mdash; managed by BPM</div>
 
     <div class="kb-layout">
       <div class="kb-nav">

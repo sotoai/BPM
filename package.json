@@ -1,7 +1,7 @@
 {
-  "name": "bentobase-project-portal",
+  "name": "bpm-bentobase-performance-manager",
   "version": "1.0.0",
-  "description": "BentoBase Project Management Portal — SQLite-backed tracking for development",
+  "description": "BPM — BentoBase Performance Manager. SQLite-backed tracking for development.",
   "type": "module",
   "main": "server.js",
   "scripts": {

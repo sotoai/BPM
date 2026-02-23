@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /**
- * BentoBase Project Portal — SQLite-Backed Server
+ * BPM (BentoBase Performance Manager) — SQLite-Backed Server
  *
- * Serves the portal UI and persists all data to a local SQLite database
+ * Serves the BPM UI and persists all data to a local SQLite database
  * inside the ./data directory. Supports concurrent access from multiple
  * clients safely.
  *
@@ -336,15 +336,15 @@ const server = http.createServer(async (req, res) => {
     // --- 404 ---
     sendJSON(res, 404, { error: "Not found" });
   } catch (err) {
-    console.error("[Portal] Error:", err.message);
+    console.error("[BPM] Error:", err.message);
     sendJSON(res, 500, { error: err.message });
   }
 });
 
 server.listen(PORT, () => {
   const ticketCount = db.prepare("SELECT COUNT(*) as count FROM tickets").get().count;
-  console.log(`\n  BentoBase Project Portal`);
-  console.log(`  ───────────────────────`);
+  console.log(`\n  BPM — BentoBase Performance Manager`);
+  console.log(`  ────────────────────────────────────`);
   console.log(`  Running at  http://localhost:${PORT}`);
   console.log(`  Database    ${DB_PATH}`);
   console.log(`  Tickets     ${ticketCount}\n`);

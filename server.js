@@ -208,13 +208,8 @@ const AREA_LABELS = {
   docs: "Documentation", portal: "Dev Dashboard",
 };
 
-function generateTicketImage(ticketId, title, type, area) {
-  const apiKey = stmts.getSetting.get("openai_api_key")?.value;
-  if (!apiKey) {
-    console.log("[BPM] Skipping image generation — no OpenAI API key configured.");
-    return;
-  }
-
+// --- Shared image prompt builder ---
+function buildImagePrompt(title, type, area) {
   const typeMap = {
     bug: "a broken mechanism or cracked ceramic object",
     feature: "a new tool or blossoming cherry blossom element",
@@ -224,12 +219,31 @@ function generateTicketImage(ticketId, title, type, area) {
   };
   const typeVisual = typeMap[type] || "a symbolic object";
   const areaLabel = AREA_LABELS[area] || "";
-
   const defaultStyle = `A 2D Japanese flat illustration in ukiyo-e inspired style with clean bold outlines, flat color fills, and muted earth tones (indigo, vermillion, moss green, warm cream). No gradients, no 3D shading, no photorealism.`;
   const customStyle = stmts.getSetting.get("image_style_prompt")?.value || "";
   const styleInstruction = customStyle || defaultStyle;
-  const prompt = `${styleInstruction} The scene depicts ${typeVisual} representing the concept: "${title}"${areaLabel ? `, in the context of ${areaLabel}` : ""}. Minimal composition, negative space, subtle paper texture background. Square format, icon-like simplicity.`;
+  return `${styleInstruction} The scene depicts ${typeVisual} representing the concept: "${title}"${areaLabel ? `, in the context of ${areaLabel}` : ""}. Minimal composition, negative space, subtle paper texture background. Square format, icon-like simplicity.`;
+}
 
+// --- Image generation dispatcher ---
+function generateTicketImage(ticketId, title, type, area) {
+  const provider = stmts.getSetting.get("image_provider")?.value || "openai";
+  if (provider === "freepik") {
+    generateTicketImageFreepik(ticketId, title, type, area);
+  } else {
+    generateTicketImageOpenAI(ticketId, title, type, area);
+  }
+}
+
+// --- OpenAI GPT Image 1 ---
+function generateTicketImageOpenAI(ticketId, title, type, area) {
+  const apiKey = stmts.getSetting.get("openai_api_key")?.value;
+  if (!apiKey) {
+    console.log("[BPM] Skipping image generation — no OpenAI API key configured.");
+    return;
+  }
+
+  const prompt = buildImagePrompt(title, type, area);
   const payload = JSON.stringify({
     model: "gpt-image-1",
     prompt,
@@ -259,7 +273,7 @@ function generateTicketImage(ticketId, title, type, area) {
         const b64 = parsed.data?.[0]?.b64_json;
         if (b64) {
           stmts.updateTicketImage.run(b64, ticketId);
-          console.log(`[BPM] Generated image for ticket ${ticketId}`);
+          console.log(`[BPM] Generated image for ticket ${ticketId} via OpenAI`);
         }
       } catch (e) {
         console.error("[BPM] Failed to parse image generation response:", e.message);
@@ -269,6 +283,121 @@ function generateTicketImage(ticketId, title, type, area) {
   apiReq.on("error", (e) => console.error("[BPM] Image generation request failed:", e.message));
   apiReq.write(payload);
   apiReq.end();
+}
+
+// --- Freepik Seedream 4.5 ---
+function generateTicketImageFreepik(ticketId, title, type, area) {
+  const apiKey = stmts.getSetting.get("freepik_api_key")?.value;
+  if (!apiKey) {
+    console.log("[BPM] Skipping image generation — no Freepik API key configured.");
+    return;
+  }
+
+  const prompt = buildImagePrompt(title, type, area);
+  const payload = JSON.stringify({ prompt, aspect_ratio: "square_1_1" });
+
+  const createReq = https.request({
+    hostname: "api.freepik.com",
+    path: "/v1/ai/text-to-image/seedream-v4-5",
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-freepik-api-key": apiKey,
+    },
+  }, (createRes) => {
+    let data = "";
+    createRes.on("data", (chunk) => { data += chunk; });
+    createRes.on("end", () => {
+      try {
+        const parsed = JSON.parse(data);
+        if (createRes.statusCode >= 400) {
+          console.error("[BPM] Freepik create task error:", parsed.message || createRes.statusCode);
+          return;
+        }
+        const taskId = parsed.data?.task_id;
+        if (!taskId) {
+          console.error("[BPM] Freepik: no task_id in response");
+          return;
+        }
+        console.log(`[BPM] Freepik task created: ${taskId} for ticket ${ticketId}`);
+        pollFreepikTask(apiKey, taskId, ticketId);
+      } catch (e) {
+        console.error("[BPM] Failed to parse Freepik create response:", e.message);
+      }
+    });
+  });
+  createReq.on("error", (e) => console.error("[BPM] Freepik create request failed:", e.message));
+  createReq.write(payload);
+  createReq.end();
+}
+
+function pollFreepikTask(apiKey, taskId, ticketId, attempt = 0, maxAttempts = 20) {
+  if (attempt >= maxAttempts) {
+    console.error(`[BPM] Freepik task ${taskId} timed out after ${maxAttempts} attempts`);
+    return;
+  }
+  setTimeout(() => {
+    const pollReq = https.request({
+      hostname: "api.freepik.com",
+      path: `/v1/ai/text-to-image/seedream-v4-5/${taskId}`,
+      method: "GET",
+      headers: { "x-freepik-api-key": apiKey },
+    }, (pollRes) => {
+      let data = "";
+      pollRes.on("data", (chunk) => { data += chunk; });
+      pollRes.on("end", () => {
+        try {
+          const parsed = JSON.parse(data);
+          const status = parsed.data?.status;
+          if (status === "COMPLETED") {
+            const imageUrl = parsed.data?.generated?.[0];
+            if (imageUrl) {
+              console.log(`[BPM] Freepik task ${taskId} completed. Downloading image...`);
+              downloadImageAsBase64(imageUrl, ticketId);
+            } else {
+              console.error(`[BPM] Freepik task completed but no image URL found`);
+            }
+          } else if (status === "FAILED") {
+            console.error(`[BPM] Freepik task ${taskId} failed`);
+          } else {
+            pollFreepikTask(apiKey, taskId, ticketId, attempt + 1, maxAttempts);
+          }
+        } catch (e) {
+          console.error("[BPM] Failed to parse Freepik poll response:", e.message);
+        }
+      });
+    });
+    pollReq.on("error", (e) => {
+      console.error("[BPM] Freepik poll request failed:", e.message);
+      pollFreepikTask(apiKey, taskId, ticketId, attempt + 1, maxAttempts);
+    });
+    pollReq.end();
+  }, 3000);
+}
+
+function downloadImageAsBase64(imageUrl, ticketId) {
+  const url = new URL(imageUrl);
+  const fetcher = url.protocol === "https:" ? https : http;
+  fetcher.get(imageUrl, (imgRes) => {
+    if (imgRes.statusCode >= 300 && imgRes.statusCode < 400 && imgRes.headers.location) {
+      downloadImageAsBase64(imgRes.headers.location, ticketId);
+      return;
+    }
+    if (imgRes.statusCode !== 200) {
+      console.error(`[BPM] Image download failed with status ${imgRes.statusCode}`);
+      return;
+    }
+    const chunks = [];
+    imgRes.on("data", (chunk) => { chunks.push(chunk); });
+    imgRes.on("end", () => {
+      const buffer = Buffer.concat(chunks);
+      const b64 = buffer.toString("base64");
+      stmts.updateTicketImage.run(b64, ticketId);
+      console.log(`[BPM] Generated image for ticket ${ticketId} via Freepik`);
+    });
+  }).on("error", (e) => {
+    console.error("[BPM] Image download failed:", e.message);
+  });
 }
 
 const server = http.createServer(async (req, res) => {
@@ -424,14 +553,20 @@ const server = http.createServer(async (req, res) => {
       const openaiKeyRow = stmts.getSetting.get("openai_api_key");
       const hasApiKey = !!(apiKeyRow?.value);
       const hasOpenAIKey = !!(openaiKeyRow?.value);
+      const freepikKeyRow = stmts.getSetting.get("freepik_api_key");
+      const hasFreepikKey = !!(freepikKeyRow?.value);
       const imageStyleRow = stmts.getSetting.get("image_style_prompt");
+      const imageProviderRow = stmts.getSetting.get("image_provider");
       sendJSON(res, 200, {
         theme: theme ? theme.value : "marshmallow",
         hasAnthropicKey: hasApiKey,
         anthropicKeyHint: hasApiKey ? "sk-ant-•••" + apiKeyRow.value.slice(-4) : "",
         hasOpenAIKey,
         openaiKeyHint: hasOpenAIKey ? "sk-•••" + openaiKeyRow.value.slice(-4) : "",
+        hasFreepikKey,
+        freepikKeyHint: hasFreepikKey ? "fpk-•••" + freepikKeyRow.value.slice(-4) : "",
         imageStylePrompt: imageStyleRow?.value || "",
+        imageProvider: imageProviderRow?.value || "openai",
       });
       return;
     }
@@ -451,6 +586,20 @@ const server = http.createServer(async (req, res) => {
           stmts.upsertSetting.run("openai_api_key", body.openai_api_key);
         } else {
           db.prepare("DELETE FROM settings WHERE key = 'openai_api_key'").run();
+        }
+      }
+      if (body.freepik_api_key !== undefined) {
+        if (body.freepik_api_key) {
+          stmts.upsertSetting.run("freepik_api_key", body.freepik_api_key);
+        } else {
+          db.prepare("DELETE FROM settings WHERE key = 'freepik_api_key'").run();
+        }
+      }
+      if (body.image_provider !== undefined) {
+        if (body.image_provider) {
+          stmts.upsertSetting.run("image_provider", body.image_provider);
+        } else {
+          db.prepare("DELETE FROM settings WHERE key = 'image_provider'").run();
         }
       }
       if (body.image_style_prompt !== undefined) {

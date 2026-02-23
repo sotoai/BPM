@@ -2171,7 +2171,7 @@ function apiRegenerateImage(id) {
   }).catch(err => console.warn("[BPM] Regenerate image failed:", err.message));
 }
 
-function pollForTicketImage(ticketId, maxAttempts = 15, intervalMs = 3000) {
+function pollForTicketImage(ticketId, maxAttempts = 25, intervalMs = 3000) {
   let attempts = 0;
   const poll = setInterval(async () => {
     attempts++;
@@ -3024,6 +3024,9 @@ let anthropicKeyHint = "";
 let hasOpenAIKey = false;
 let openaiKeyHint = "";
 let imageStylePrompt = "";
+let hasFreepikKey = false;
+let freepikKeyHint = "";
+let imageProvider = "openai";
 let selectedProvider = "anthropic";
 let selectedModel = "claude-sonnet-4-20250514";
 
@@ -3163,6 +3166,17 @@ function openAppSettings() {
            <button class="btn btn-primary btn-sm" onclick="saveProviderKey('openai')" style="font-size:10px;padding:3px 10px">Save</button>
          </div>`;
 
+    const freepikSection = hasFreepikKey
+      ? `<div class="settings-modal-row">
+           <div class="settings-modal-status"><span class="dot"></span> Connected</div>
+           <span class="settings-modal-hint">${esc(freepikKeyHint)}</span>
+           <button class="btn btn-sm" onclick="clearProviderKey('freepik')" style="font-size:10px;padding:3px 8px">Remove</button>
+         </div>`
+      : `<div class="settings-modal-row">
+           <input type="password" id="freepik-key-input" placeholder="fpk-..." />
+           <button class="btn btn-primary btn-sm" onclick="saveProviderKey('freepik')" style="font-size:10px;padding:3px 10px">Save</button>
+         </div>`;
+
     return `
       <div class="modal-header">
         <div class="modal-title">Settings</div>
@@ -3177,10 +3191,24 @@ function openAppSettings() {
           <div class="settings-modal-label">OpenAI API Key</div>
           ${openaiSection}
         </div>
+        <div class="settings-modal-section">
+          <div class="settings-modal-label">Freepik API Key</div>
+          ${freepikSection}
+        </div>
         <div style="font-size:10px;color:var(--muted);margin-top:4px;line-height:1.5;">
           API keys are stored securely on the server and never exposed to the browser.
         </div>
         <hr style="border:none;border-top:1px solid color-mix(in srgb, var(--border) 10%, transparent);margin:16px 0;" />
+        <div class="settings-modal-section">
+          <div class="settings-modal-label">Image Generation Provider</div>
+          <div style="font-size:10px;color:var(--muted);margin-bottom:6px;line-height:1.4;">
+            Choose which AI provider generates ticket card images.
+          </div>
+          <select id="image-provider-select" class="select" style="font-size:12px;" onchange="saveImageProvider(this.value)">
+            <option value="openai"${imageProvider === "openai" ? " selected" : ""}>OpenAI (GPT Image 1)</option>
+            <option value="freepik"${imageProvider === "freepik" ? " selected" : ""}>Freepik (Seedream 4.5)</option>
+          </select>
+        </div>
         <div class="settings-modal-section">
           <div class="settings-modal-label">Image Generation Style</div>
           <div style="font-size:10px;color:var(--muted);margin-bottom:6px;line-height:1.4;">
@@ -3205,8 +3233,8 @@ function openAppSettings() {
 }
 
 function saveProviderKey(provider) {
-  const inputId = provider === "anthropic" ? "anthropic-key-input" : "openai-key-input";
-  const input = document.getElementById(inputId);
+  const inputIds = { anthropic: "anthropic-key-input", openai: "openai-key-input", freepik: "freepik-key-input" };
+  const input = document.getElementById(inputIds[provider]);
   const key = input?.value?.trim();
   if (!key) return;
 
@@ -3215,14 +3243,18 @@ function saveProviderKey(provider) {
   if (provider === "anthropic") {
     hasAnthropicKey = true;
     anthropicKeyHint = "sk-ant-\u2022\u2022\u2022" + key.slice(-4);
-  } else {
+  } else if (provider === "openai") {
     hasOpenAIKey = true;
     openaiKeyHint = "sk-\u2022\u2022\u2022" + key.slice(-4);
+  } else if (provider === "freepik") {
+    hasFreepikKey = true;
+    freepikKeyHint = "fpk-\u2022\u2022\u2022" + key.slice(-4);
   }
 
-  showToast(`${PROVIDERS[provider].label} API key saved`);
+  const labels = { anthropic: "Anthropic", openai: "OpenAI", freepik: "Freepik" };
+  showToast(`${labels[provider]} API key saved`);
   if (window._refreshSettingsModal) window._refreshSettingsModal();
-  renderPromptLab();
+  if (provider !== "freepik") renderPromptLab();
 }
 
 function clearProviderKey(provider) {
@@ -3231,14 +3263,18 @@ function clearProviderKey(provider) {
   if (provider === "anthropic") {
     hasAnthropicKey = false;
     anthropicKeyHint = "";
-  } else {
+  } else if (provider === "openai") {
     hasOpenAIKey = false;
     openaiKeyHint = "";
+  } else if (provider === "freepik") {
+    hasFreepikKey = false;
+    freepikKeyHint = "";
   }
 
-  showToast(`${PROVIDERS[provider].label} API key removed`);
+  const labels = { anthropic: "Anthropic", openai: "OpenAI", freepik: "Freepik" };
+  showToast(`${labels[provider]} API key removed`);
   if (window._refreshSettingsModal) window._refreshSettingsModal();
-  renderPromptLab();
+  if (provider !== "freepik") renderPromptLab();
 }
 
 function saveImageStylePrompt() {
@@ -3254,6 +3290,12 @@ function clearImageStylePrompt() {
   saveSettings({ image_style_prompt: "" });
   showToast("Image style reset to default");
   if (window._refreshSettingsModal) window._refreshSettingsModal();
+}
+
+function saveImageProvider(value) {
+  imageProvider = value;
+  saveSettings({ image_provider: value });
+  showToast(`Image provider set to ${value === "freepik" ? "Freepik Seedream 4.5" : "OpenAI GPT Image 1"}`);
 }
 
 async function generateAIPrompt() {
@@ -4203,6 +4245,9 @@ function initTrackerTilt() {
   hasOpenAIKey = settings.hasOpenAIKey || false;
   openaiKeyHint = settings.openaiKeyHint || "";
   imageStylePrompt = settings.imageStylePrompt || "";
+  hasFreepikKey = settings.hasFreepikKey || false;
+  freepikKeyHint = settings.freepikKeyHint || "";
+  imageProvider = settings.imageProvider || "openai";
 
   // Initial render
   renderDashboard();

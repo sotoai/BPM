@@ -2907,7 +2907,7 @@ function getKBContextForArea(area) {
   const ctx = {
     login:      "Login Screen: PIN-based local auth, session management, splash screen, lockout after failed attempts. No remote auth server. Key concern: PIN storage security, session timeout handling.",
     agents:     "Agents: AI personas with classifications (Observer, Analyst, Orchestrator, Operator, Archivist). Managed by a dedicated server on port 3009 via REST API. Each agent has capabilities, memory settings, behavior config, and collaborator links. Agent nodes in flows reference agents by ID. Key files: agents.js, agentEditor.js, agentsClient.js.",
-    flows:      "Flows & Canvas: Visual workflow editor with infinite pan/zoom canvas. Nodes are placed and connected with edges. SubFlows embed other flows as reusable steps. Inspector panel has Properties, Library, and Agents tabs. State managed through central dispatch/reduce store. Key files: editor.js, dragCreate.js, nodeView.js, pan.js, camera.js, schema.js.",
+    flows:      "Flows & Canvas: Visual workflow editor with infinite pan/zoom canvas. Nodes are placed and connected with edges. SubFlows embed other flows as reusable steps. Inspector panel has Properties, Library, and Agents tabs. Keyboard shortcuts: Space+drag to pan, Ctrl/Cmd+scroll to zoom, F to reset zoom, Shift to reveal thumbnails/ports, Tab for flow nav, Backspace/Delete to remove selected, Ctrl/Cmd+Z/Shift+Z for undo/redo, Ctrl/Cmd+S to save, Shift+drag for axis lock. State managed through central dispatch/reduce store. Key files: editor.js, dragCreate.js, nodeView.js, pan.js, camera.js, schema.js.",
     data:       "Data: Local-first data management \u2014 connections to external sources, file uploads, knowledge bases for RAG. All files stored locally. Data preview for inspecting contents before use in flows. Key files: storage/flows.js and the data management UI components.",
     interfaces: "Interfaces: Visual UI builder for creating front-ends connected to flows. Grid/flex layout, pre-built components (inputs, buttons, displays), and live preview. Allows non-technical users to interact with complex flows through simple forms.",
     community:  "Community: Marketplace for sharing flows/agents/templates, threaded discussions, personal storefronts (My Store), ratings and reviews, search/filter. Features 3D tilt card effects and collapsible categories. Key files: community.js, communityMarketplace.js, communityMyStore.js.",
@@ -2937,6 +2937,7 @@ const KB_SECTIONS = {
   communityShowcase: { label: "Community & Showcase", render: renderKBCommunityShowcase },
   loginSettings: { label: "Login & Settings", render: renderKBLoginSettings },
   themes: { label: "Theming & UX", render: renderKBThemes },
+  toneVoice: { label: "Tone & Voice", render: renderKBToneVoice },
   security: { label: "Security", render: renderKBSecurity },
   conventions: { label: "Conventions", render: renderKBConventions },
 };
@@ -3146,6 +3147,32 @@ function renderKBFlowsCanvas() {
 \u2022 Draw connections between ports by clicking and dragging
 \u2022 Select nodes to see their properties in the inspector
 \u2022 Drop new nodes from the palette, library, or agents tab</code></pre>
+
+    <h3>Canvas Navigation & Keyboard Shortcuts</h3>
+    <p>The canvas supports mouse, trackpad, and keyboard shortcuts for efficient navigation:</p>
+
+    <table class="kb-table">
+      <thead><tr><th>Shortcut</th><th>What it does</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Scroll / Trackpad swipe</strong></td><td>Pan the canvas (vertical and horizontal)</td></tr>
+        <tr><td><strong>Space + drag</strong></td><td>Pan the canvas with grab cursor</td></tr>
+        <tr><td><strong>Ctrl/Cmd + scroll</strong></td><td>Zoom in and out (also handles trackpad pinch-to-zoom)</td></tr>
+        <tr><td><strong>Alt/Option + scroll</strong></td><td>Zoom in and out</td></tr>
+        <tr><td><strong>F</strong></td><td>Reset zoom to 100% while keeping canvas center</td></tr>
+        <tr><td><strong>Shift (hold)</strong></td><td>Reveal node thumbnails and port names on the canvas</td></tr>
+        <tr><td><strong>Tab</strong></td><td>Toggle the flow navigation overlay (switch between flows)</td></tr>
+        <tr><td><strong>Escape</strong></td><td>Close overlays, cancel port connection in progress</td></tr>
+        <tr><td><strong>Backspace / Delete</strong></td><td>Delete selected nodes and edges</td></tr>
+        <tr><td><strong>Ctrl/Cmd + S</strong></td><td>Save the current flow</td></tr>
+        <tr><td><strong>Ctrl/Cmd + Z</strong></td><td>Undo last action</td></tr>
+        <tr><td><strong>Ctrl/Cmd + Shift + Z</strong></td><td>Redo last undone action</td></tr>
+        <tr><td><strong>Ctrl/Cmd + L</strong></td><td>Lock the app (if a PIN is set)</td></tr>
+        <tr><td><strong>Shift + drag node</strong></td><td>Axis-lock movement (restrict to horizontal or vertical)</td></tr>
+        <tr><td><strong>Shift + click</strong></td><td>Add to current selection (multi-select)</td></tr>
+      </tbody>
+    </table>
+
+    <p>Zoom range is 25% to 250%. All keyboard shortcuts are disabled when typing in text fields.</p>
 
     <h3>SubFlows (Nested Flows)</h3>
     <p>A flow can contain another flow as a "SubFlow" node. This allows complex workflows to be broken into manageable pieces. When you double-click a SubFlow node, you navigate inside it. A breadcrumb trail lets you navigate back up to the parent flow.</p>
@@ -3386,6 +3413,51 @@ function renderKBThemes() {
 
     <h3>Adding a New Theme</h3>
     <p>To add a theme, define a new set of color variables under a theme attribute selector in the CSS. Then add the theme name to the theme selector dropdown in the app shell.</p>
+  `;
+}
+
+function renderKBToneVoice() {
+  document.getElementById("kb-content").innerHTML = `
+    <h2>Tone & Voice</h2>
+    <p>BentoBase is designed to feel like a calm, inspiring, and accessible space. The experience should invite people in rather than overwhelm them. Every screen, message, and interaction reinforces the idea that this is a place where builders of all skill levels can explore AI on their own terms.</p>
+
+    <h3>Overall Feeling</h3>
+    <p>The app aims to be:</p>
+    <pre><code>\u2022 Calm \u2014 Unhurried, spacious layouts with breathing room. No flashing alerts, aggressive upsells, or attention-grabbing tricks.
+\u2022 Inspiring \u2014 Encourages curiosity and creative exploration. The interface rewards experimentation rather than punishing mistakes.
+\u2022 Accessible \u2014 Welcoming to non-technical users. Plain language over jargon. Clear labels, helpful empty states, and gentle guidance.
+\u2022 Sovereign \u2014 Reinforces that the user is in control. Their data stays local, their choices are respected, and they are never locked in.</code></pre>
+
+    <h3>Splash Screen</h3>
+    <p>When BentoBase starts (or when the app is locked), a splash screen greets the user with the animated Bento grid loader, a theme selector, and server health indicators. Rotating text cycles through two types of content:</p>
+
+    <h4>Philosophical Quotes</h4>
+    <p>The majority of splash content is drawn from a curated collection of around 60 quotes from philosophers, poets, and writers spanning thousands of years. These are not motivational posters or productivity slogans. They are reflective, timeless observations about awareness, purpose, resilience, and the human experience. Sources include:</p>
+    <pre><code>\u2022 Stoic philosophers \u2014 Marcus Aurelius, Epictetus, Seneca
+\u2022 Existentialists \u2014 Kierkegaard, Camus, Sartre, Nietzsche, Frankl
+\u2022 Eastern wisdom \u2014 Laozi, Buddha
+\u2022 Classical thinkers \u2014 Socrates, Aristotle, Heraclitus
+\u2022 Poets and writers \u2014 Rilke, Rumi, Emily Dickinson, Mary Oliver, Leonard Cohen, T. S. Eliot, Tolkien, Hemingway, Steinbeck, Oscar Wilde
+\u2022 Civil rights voices \u2014 Martin Luther King Jr., Toni Morrison, Zora Neale Hurston</code></pre>
+    <p>The quotes share a common thread: they speak to inner strength, self-knowledge, the courage to begin, and finding meaning in difficulty. They set a contemplative mood that distinguishes BentoBase from typical developer tooling.</p>
+
+    <h4>Practical Tips</h4>
+    <p>Interspersed with the quotes are short usage tips prefixed with "Tip:" that teach canvas shortcuts and workflow best practices. Examples include keyboard shortcuts (Space+drag to pan, F to reset zoom), node design advice (keep node bodies clean, write descriptions as full sentences), and connection guidance (masking nodes sit between inputs and models). These help new users learn the app while waiting for services to come online.</p>
+
+    <h3>Sovereignty Statement</h3>
+    <p>The splash screen includes a dedicated "AI Sovereignty" note in the corner. It advises users to develop AI that is fully under their control \u2014 to know what models are used, when and how data travels, and to be in full agreement with every action AI performs. It links to the full source code download. This is not a legal disclaimer; it is a statement of values.</p>
+
+    <h3>Guiding Principles for New Content</h3>
+    <p>When writing labels, messages, empty states, or any user-facing text in BentoBase, follow these principles:</p>
+    <pre><code>\u2022 Use plain, human language \u2014 say "saved flows" not "persisted flow artifacts"
+\u2022 Be encouraging, not demanding \u2014 "Drag a node to get started" not "You must create a node"
+\u2022 Respect the user's intelligence \u2014 clear does not mean dumbed down
+\u2022 Avoid urgency and pressure \u2014 no countdowns, no "act now" language, no artificial scarcity
+\u2022 Prefer warmth over formality \u2014 conversational but not sloppy
+\u2022 Let the work speak for itself \u2014 the app earns trust through transparency, not marketing</code></pre>
+
+    <h3>The Closing Tagline</h3>
+    <p>"Build systems that deserve to exist." This phrase appears across the About page and Design Partners materials. It captures the aspiration: BentoBase is for people who care about what they build and how it affects others.</p>
   `;
 }
 

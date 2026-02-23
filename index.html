@@ -306,7 +306,6 @@ html, body {
   border: 1px solid color-mix(in srgb, var(--border) 8%, transparent);
   border-radius: 10px;
   padding: 20px;
-  overflow: hidden;
   transition: border-color 150ms ease, box-shadow 150ms ease;
 }
 
@@ -1150,35 +1149,79 @@ html, body {
   .page-title { font-size: 18px; }
   .page-subtitle { font-size: 12px; margin-bottom: 16px; }
 
-  /* Dashboard */
-  .dash-layout { grid-template-columns: 1fr; gap: 16px; max-width: 100%; }
+  /* Dashboard — completely flatten for mobile */
+  .dash-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    width: 100%;
+    max-width: 100%;
+  }
+  .dash-layout > div { width: 100%; min-width: 0; max-width: 100%; }
+
+  /* Health: simple vertical list, no grid */
   .health-sidebar {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(min(110px, 45%), 1fr));
-    gap: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
     position: static;
-    padding: 0 0 14px;
+    padding: 0 0 12px;
+    margin-bottom: 12px;
     border-bottom: 1px solid color-mix(in srgb, var(--border) 8%, transparent);
-    margin-bottom: 4px;
   }
-  .health-sidebar-title { grid-column: 1 / -1; padding: 0 0 4px; }
+  .health-sidebar-title { padding: 0 0 8px; }
   .health-row {
-    padding: 7px 10px;
-    border-radius: 8px;
-    background: color-mix(in srgb, var(--text) 3%, transparent);
-    min-width: 0;
+    padding: 8px 4px;
+    border-radius: 0;
+    background: none;
+    border-bottom: 1px solid color-mix(in srgb, var(--border) 4%, transparent);
+    gap: 8px;
   }
-  .health-row-label { font-size: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .health-dot { width: 6px; height: 6px; }
-  .stats-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px; }
-  .stat-card { padding: 12px 10px; text-align: center; }
+  .health-row:last-child { border-bottom: none; }
+  .health-row-label { font-size: 12px; flex: 1; min-width: 0; }
+  .health-dot { width: 8px; height: 8px; }
+  .health-row-count { font-size: 11px; }
+
+  /* Stats: 2-col grid, no auto-fit guessing */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .stat-card { padding: 14px 12px; }
   .stat-value { font-size: 22px; }
-  .stat-label { font-size: 8px; letter-spacing: 0.05em; }
+  .stat-label { font-size: 9px; }
   .stat-sub { display: none; }
 
-  /* Dashboard recent panels — stack vertically */
-  .dash-two-col { grid-template-columns: 1fr; gap: 16px; }
-  .dash-two-col .card { max-height: 260px; overflow-y: auto; }
+  /* Recent panels — full width stack */
+  .dash-two-col {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .dash-two-col > div { width: 100%; min-width: 0; }
+  .dash-two-col .card {
+    max-height: 240px;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  /* Force all activity items to not overflow */
+  .activity-item {
+    min-width: 0;
+    overflow: hidden;
+  }
+  .activity-item > div { min-width: 0; overflow: hidden; }
+  .activity-item .badge { flex-shrink: 0; font-size: 8px; padding: 2px 6px; }
+  .activity-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 11px;
+  }
+  .activity-time { font-size: 9px; word-break: break-all; }
+
   .detail-fields-grid { grid-template-columns: 1fr; }
 
   /* Tracker */
@@ -1258,9 +1301,10 @@ html, body {
 
 /* --- Responsive: Small phones (≤ 380px) --- */
 @media (max-width: 380px) {
-  .stats-grid { grid-template-columns: repeat(2, 1fr); }
-  .health-sidebar { grid-template-columns: repeat(auto-fill, minmax(min(100px, 44%), 1fr)); }
-  .health-row-label { font-size: 9px; }
+  .stats-grid { grid-template-columns: 1fr 1fr; }
+  .stat-card { padding: 10px 8px; }
+  .stat-value { font-size: 18px; }
+  .health-row-label { font-size: 11px; }
   .badge { font-size: 9px; padding: 2px 6px; }
   .tracker-filter { font-size: 9px; }
 }
@@ -1412,7 +1456,9 @@ html, body {
   grid-template-columns: 1fr 1fr;
   gap: 20px;
   margin-top: 20px;
+  min-width: 0;
 }
+.dash-two-col > div { min-width: 0; }
 
 /* --- Detail fields grid --- */
 .detail-fields-grid {

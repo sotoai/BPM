@@ -1,2 +1,2 @@
-# Persist data directory structure but ignore actual data files
-data/*.json
+# OS files
+.DS_Store

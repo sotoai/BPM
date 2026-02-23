@@ -18,6 +18,7 @@ import http from "http";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { execFile } from "child_process";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -50,6 +51,43 @@ function readJSON(filePath, fallback) {
 
 function writeJSON(filePath, data) {
   fs.writeFileSync(filePath, JSON.stringify(data, null, 2), "utf-8");
+}
+
+// ---------------------------------------------------------------------------
+// Git auto-sync (debounced commit + push after data changes)
+// ---------------------------------------------------------------------------
+let gitSyncTimer = null;
+const GIT_SYNC_DELAY = 5000; // wait 5s after last write before committing
+
+function scheduleGitSync() {
+  clearTimeout(gitSyncTimer);
+  gitSyncTimer = setTimeout(runGitSync, GIT_SYNC_DELAY);
+}
+
+function runGitSync() {
+  const git = (args) =>
+    new Promise((resolve, reject) => {
+      execFile("git", args, { cwd: __dirname }, (err, stdout, stderr) => {
+        if (err) reject(new Error(stderr || err.message));
+        else resolve(stdout.trim());
+      });
+    });
+
+  (async () => {
+    try {
+      // Check if there are actual changes to commit
+      const status = await git(["status", "--porcelain", "data/"]);
+      if (!status) return; // nothing changed
+
+      const timestamp = new Date().toISOString().replace("T", " ").slice(0, 19);
+      await git(["add", "data/"]);
+      await git(["commit", "-m", `Portal data update — ${timestamp}`]);
+      await git(["push"]);
+      console.log(`[Git] Synced at ${timestamp}`);
+    } catch (err) {
+      console.warn("[Git] Sync failed:", err.message);
+    }
+  })();
 }
 
 // ---------------------------------------------------------------------------
@@ -126,6 +164,7 @@ const server = http.createServer(async (req, res) => {
     if (pathname === "/api/data" && req.method === "PUT") {
       const body = await parseBody(req);
       writeJSON(DATA_FILE, body);
+      scheduleGitSync();
       sendJSON(res, 200, { ok: true });
       return;
     }
@@ -140,6 +179,7 @@ const server = http.createServer(async (req, res) => {
     if (pathname === "/api/settings" && req.method === "PUT") {
       const body = await parseBody(req);
       writeJSON(SETTINGS_FILE, body);
+      scheduleGitSync();
       sendJSON(res, 200, { ok: true });
       return;
     }

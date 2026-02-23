@@ -1380,8 +1380,9 @@ html, body {
 // BentoBase Project Portal — Application Logic
 // ============================================================
 
-// --- Data Layer (file-backed via server API) ---
+// --- Data Layer (SQLite-backed via server API) ---
 const API_BASE = window.location.origin;
+const JSON_HEADERS = { "Content-Type": "application/json" };
 const STORAGE_KEY = "bentobase_portal"; // legacy key for migration
 
 async function loadDataFromServer() {
@@ -1399,12 +1400,34 @@ async function loadDataFromServer() {
   return { tickets: [], activity: [], kbNotes: {} };
 }
 
+// --- Granular API helpers ---
+function apiCreateTicket(ticket, activityEntry) {
+  const payload = { ...ticket };
+  if (activityEntry) payload._activity = activityEntry;
+  fetch(`${API_BASE}/api/tickets`, {
+    method: "POST", headers: JSON_HEADERS, body: JSON.stringify(payload),
+  }).catch(err => console.warn("[Portal] Create failed:", err.message));
+}
+
+function apiUpdateTicket(id, fields, activityEntry) {
+  const payload = { ...fields };
+  if (activityEntry) payload._activity = activityEntry;
+  fetch(`${API_BASE}/api/tickets/${encodeURIComponent(id)}`, {
+    method: "PUT", headers: JSON_HEADERS, body: JSON.stringify(payload),
+  }).catch(err => console.warn("[Portal] Update failed:", err.message));
+}
+
+function apiDeleteTicket(id, activityEntry) {
+  const payload = activityEntry ? { _activity: activityEntry } : {};
+  fetch(`${API_BASE}/api/tickets/${encodeURIComponent(id)}`, {
+    method: "DELETE", headers: JSON_HEADERS, body: JSON.stringify(payload),
+  }).catch(err => console.warn("[Portal] Delete failed:", err.message));
+}
+
+// Bulk sync fallback (used for migration)
 function saveData(data) {
-  // Fire-and-forget save to server
   fetch(`${API_BASE}/api/data`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
+    method: "PUT", headers: JSON_HEADERS, body: JSON.stringify(data),
   }).catch(err => console.warn("[Portal] Save failed:", err.message));
 }
 
@@ -1418,9 +1441,7 @@ async function loadSettingsFromServer() {
 
 function saveSettings(settings) {
   fetch(`${API_BASE}/api/settings`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(settings),
+    method: "PUT", headers: JSON_HEADERS, body: JSON.stringify(settings),
   }).catch(err => console.warn("[Portal] Settings save failed:", err.message));
 }
 
@@ -1436,24 +1457,18 @@ async function migrateLocalStorage() {
     const res = await fetch(`${API_BASE}/api/data`);
     if (res.ok) {
       const serverData = await res.json();
-      if (serverData.tickets && serverData.tickets.length > 0) return; // server already has data
+      if (serverData.tickets && serverData.tickets.length > 0) return;
     }
 
-    // Push local data to server
+    // Push local data to server via bulk sync
     await fetch(`${API_BASE}/api/data`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: raw,
+      method: "PUT", headers: JSON_HEADERS, body: raw,
     });
-    console.log("[Portal] Migrated localStorage data to server files.");
+    console.log("[Portal] Migrated localStorage data to server.");
 
-    // Migrate theme too
     const savedTheme = localStorage.getItem("bb_portal_theme");
-    if (savedTheme) {
-      saveSettings({ theme: savedTheme });
-    }
+    if (savedTheme) saveSettings({ theme: savedTheme });
 
-    // Clear localStorage after successful migration
     localStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem("bb_portal_theme");
     console.log("[Portal] Cleared legacy localStorage entries.");
@@ -1473,7 +1488,7 @@ function now() { return new Date().toISOString(); }
 function addActivity(action, ticketId, title) {
   DATA.activity.unshift({ action, ticketId, title, time: now() });
   if (DATA.activity.length > 100) DATA.activity.length = 100;
-  saveData(DATA);
+  // Activity is persisted via the ticket API calls (_activity field)
 }
 
 function formatTime(iso) {
@@ -1849,8 +1864,9 @@ function cycleStatus(id) {
   const i = order.indexOf(t.status);
   t.status = order[(i + 1) % order.length];
   t.updatedAt = now();
-  addActivity(t.status === "done" ? "complete" : "update", t.id, `${t.title} \u2192 ${t.status}`);
-  saveData(DATA);
+  const act = { action: t.status === "done" ? "complete" : "update", ticketId: t.id, title: `${t.title} \u2192 ${t.status}`, time: now() };
+  addActivity(act.action, act.ticketId, act.title);
+  apiUpdateTicket(t.id, { status: t.status, updatedAt: t.updatedAt }, act);
   renderCurrentPage();
 }
 
@@ -1943,8 +1959,9 @@ function submitNewTicket() {
     updatedAt: now(),
   };
   DATA.tickets.push(ticket);
-  addActivity("create", ticket.id, `Created: ${ticket.title}`);
-  saveData(DATA);
+  const act = { action: "create", ticketId: ticket.id, title: `Created: ${ticket.title}`, time: now() };
+  addActivity(act.action, act.ticketId, act.title);
+  apiCreateTicket(ticket, act);
   closeModal();
   renderCurrentPage();
 }
@@ -2035,8 +2052,9 @@ function submitEditTicket(id) {
   t.assignee = document.getElementById("m-assignee")?.value.trim() || "";
   t.files = document.getElementById("m-files")?.value.trim() || "";
   t.updatedAt = now();
-  addActivity("update", t.id, `Updated: ${t.title}`);
-  saveData(DATA);
+  const act = { action: "update", ticketId: t.id, title: `Updated: ${t.title}`, time: now() };
+  addActivity(act.action, act.ticketId, act.title);
+  apiUpdateTicket(t.id, { title: t.title, description: t.description, type: t.type, priority: t.priority, status: t.status, area: t.area, subarea: t.subarea, assignee: t.assignee, files: t.files, updatedAt: t.updatedAt }, act);
   closeModal();
   renderCurrentPage();
 }
@@ -2046,8 +2064,9 @@ function deleteTicket(id) {
   if (!t) return;
   if (!confirm(`Delete "${t.title}"? This cannot be undone.`)) return;
   DATA.tickets = DATA.tickets.filter(x => x.id !== id);
-  addActivity("delete", id, `Deleted: ${t.title}`);
-  saveData(DATA);
+  const act = { action: "delete", ticketId: id, title: `Deleted: ${t.title}`, time: now() };
+  addActivity(act.action, act.ticketId, act.title);
+  apiDeleteTicket(id, act);
   closeModal();
   closeDetail();
   renderCurrentPage();
@@ -2179,8 +2198,14 @@ function setPromptType(type) {
 function generateCurrentPrompt() {
   const ticket = selectedPromptTicket ? DATA.tickets.find(t => t.id === selectedPromptTicket) : null;
   lastGeneratedPrompt = buildPrompt(ticket, promptType);
-  addActivity("prompt", ticket?.id || null, `Generated ${promptType} prompt${ticket ? ": " + ticket.title : ""}`);
-  saveData(DATA);
+  const act = { action: "prompt", ticketId: ticket?.id || null, title: `Generated ${promptType} prompt${ticket ? ": " + ticket.title : ""}`, time: now() };
+  addActivity(act.action, act.ticketId, act.title);
+  // Prompt generation only creates activity — persist it via a no-op ticket update if ticket exists, otherwise bulk sync
+  if (ticket) {
+    apiUpdateTicket(ticket.id, { updatedAt: ticket.updatedAt }, act);
+  } else {
+    saveData(DATA);
+  }
   renderPromptLab();
 }
 
@@ -2189,8 +2214,9 @@ function generatePromptForTicket(id) {
   const t = DATA.tickets.find(x => x.id === id);
   promptType = t?.type === "bug" ? "fix" : "implement";
   lastGeneratedPrompt = buildPrompt(t, promptType);
-  addActivity("prompt", id, `Generated ${promptType} prompt: ${t?.title || id}`);
-  saveData(DATA);
+  const act = { action: "prompt", ticketId: id, title: `Generated ${promptType} prompt: ${t?.title || id}`, time: now() };
+  addActivity(act.action, act.ticketId, act.title);
+  if (t) apiUpdateTicket(t.id, { updatedAt: t.updatedAt }, act);
   // Switch to prompt lab
   currentPage = "prompts";
   document.querySelectorAll(".shell-nav-btn").forEach(b => b.classList.toggle("active", b.dataset.page === "prompts"));

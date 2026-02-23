@@ -1,2 +1,13 @@
 # OS files
 .DS_Store
+
+# Dependencies
+node_modules/
+
+# SQLite database (each deployment has its own)
+data/*.sqlite3
+data/*.sqlite3-wal
+data/*.sqlite3-shm
+
+# Legacy JSON data files
+data/*.json

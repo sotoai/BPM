@@ -1395,6 +1395,25 @@ html, body {
 .prompt-ai-output li { margin-bottom: 4px; }
 .prompt-ai-output strong { color: var(--text); }
 
+.prompt-edit-area {
+  width: 100%;
+  flex: 1;
+  padding: 16px 18px;
+  border: 1px solid color-mix(in srgb, var(--border) 12%, transparent);
+  border-radius: 10px;
+  background: var(--panel2);
+  color: var(--text);
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  font-size: 12px;
+  line-height: 1.6;
+  resize: none;
+  overflow-y: auto;
+}
+.prompt-edit-area:focus {
+  outline: none;
+  border-color: var(--focus);
+}
+
 /* --- Knowledge Base --- */
 .kb-layout {
   display: grid;
@@ -1903,6 +1922,7 @@ html, body {
   .prompt-type-tabs { flex-wrap: wrap; }
   .prompt-type-tab { font-size: 10px; padding: 5px 10px; }
   .prompt-output { font-size: 11px; padding: 14px; }
+  .prompt-edit-area { font-size: 11px; padding: 12px 14px; }
 
   /* Knowledge Base */
   .kb-layout { grid-template-columns: 1fr; gap: 12px; height: auto; }
@@ -3436,11 +3456,9 @@ function renderPromptLab() {
   const openTickets = DATA.tickets.filter(t => t.status !== "done");
   const selectedTicket = selectedPromptTicket ? DATA.tickets.find(t => t.id === selectedPromptTicket) : null;
 
-  const outputContent = promptIsLoading
-    ? `<div class="prompt-loading"><div class="spinner"></div>Generating prompt with ${esc(PROVIDERS[selectedProvider].label)}\u2026</div>`
-    : lastGeneratedPrompt
-      ? simpleMarkdownToHtml(lastGeneratedPrompt)
-      : '<span class="prompt-output-empty">Select a ticket to generate an AI-powered prompt for Claude Code.</span>';
+  const hasPrompt = !promptIsLoading && lastGeneratedPrompt;
+  const loadingContent = `<div class="prompt-loading"><div class="spinner"></div>Generating prompt with ${esc(PROVIDERS[selectedProvider].label)}\u2026</div>`;
+  const emptyContent = '<span class="prompt-output-empty">Select a ticket to generate an AI-powered prompt for Claude Code.</span>';
 
   const providerHasKey = PROVIDERS[selectedProvider].hasKey();
   const providerModels = PROVIDERS[selectedProvider].models;
@@ -3479,16 +3497,18 @@ function renderPromptLab() {
             ${["implement","fix","refactor","test","review"].map(p => `<button class="prompt-type-tab${promptType===p?" active":""}" onclick="setPromptType('${p}')">${p.charAt(0).toUpperCase()+p.slice(1)}</button>`).join("")}
           </div>
           <div style="flex:1"></div>
-          <button class="btn btn-sm" onclick="copyText(lastGeneratedPrompt)" ${!lastGeneratedPrompt||promptIsLoading?"disabled":""}>Copy</button>
+          <button class="btn btn-sm" onclick="copyText(lastGeneratedPrompt)" ${!hasPrompt?"disabled":""}>Copy</button>
+          <button class="btn btn-sm" onclick="savePromptToNotes()" ${!hasPrompt||!selectedPromptTicket?"disabled":""}>Save to Notes</button>
           <button class="btn btn-primary btn-sm" onclick="generateAIPrompt()" ${!selectedPromptTicket||promptIsLoading||!providerHasKey?"disabled":""}>
             ${promptIsLoading ? "Generating\u2026" : "Generate"}
           </button>
         </div>
         ${!providerHasKey ? `<div style="font-size:11px;color:var(--runFailed);padding:4px 0;">No ${PROVIDERS[selectedProvider].label} API key configured. Click \u2699 to add one.</div>` : ""}
 
-        <div class="prompt-ai-output" id="prompt-output">
-          ${outputContent}
-        </div>
+        ${hasPrompt
+          ? `<textarea class="prompt-edit-area" id="prompt-edit-area" oninput="lastGeneratedPrompt=this.value">${esc(lastGeneratedPrompt)}</textarea>`
+          : `<div class="prompt-ai-output" id="prompt-output">${promptIsLoading ? loadingContent : emptyContent}</div>`
+        }
       </div>
     </div>
   `;
@@ -3531,6 +3551,17 @@ function setProvider(value) {
 
 function setModel(value) {
   selectedModel = value;
+}
+
+async function savePromptToNotes() {
+  if (!lastGeneratedPrompt || !selectedPromptTicket) return;
+  const author = localStorage.getItem("bpm_note_author") || "Prompt Lab";
+  const prefix = `[${promptType.toUpperCase()} prompt \u2014 ${PROVIDERS[selectedProvider].label}]\n\n`;
+  const content = prefix + lastGeneratedPrompt;
+  const created = await apiCreateNote(selectedPromptTicket, { content, author });
+  if (created) {
+    showToast("Prompt saved to ticket notes");
+  }
 }
 
 function openAppSettings() {

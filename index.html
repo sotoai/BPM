@@ -936,14 +936,35 @@ html, body {
   border: 1px solid color-mix(in srgb, var(--border) 6%, transparent);
   border-radius: 8px;
   padding: 12px;
-  cursor: pointer;
-  transition: all 150ms ease;
+  cursor: grab;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+  transform-style: preserve-3d;
+  will-change: transform;
 }
+
+.roadmap-card:active { cursor: grabbing; }
 
 .roadmap-card:hover {
   border-color: color-mix(in srgb, var(--focus) 30%, transparent);
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px color-mix(in srgb, var(--text) 6%, transparent);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--text) 8%, transparent);
+}
+
+.roadmap-card.dragging {
+  opacity: 0.4;
+  transform: scale(0.96) !important;
+}
+
+.roadmap-cards.drag-over {
+  background: color-mix(in srgb, var(--focus) 6%, transparent);
+  border-radius: 0 0 10px 10px;
+}
+
+.roadmap-cards .drop-indicator {
+  height: 2px;
+  background: var(--focus);
+  border-radius: 1px;
+  margin: 2px 0;
+  transition: opacity 100ms ease;
 }
 
 .roadmap-card-title {
@@ -2699,7 +2720,7 @@ function renderRoadmap() {
           <div class="roadmap-cards" data-status="${col}">
             ${grouped[col].length === 0 ? `<div class="empty-state" style="padding:24px 12px"><div class="empty-state-sub">No items</div></div>` :
               grouped[col].map(t => `
-                <div class="roadmap-card" onclick="openTicketDetail('${t.id}')">
+                <div class="roadmap-card" draggable="true" data-ticket-id="${t.id}" onclick="openTicketDetail('${t.id}')">
                   <div class="roadmap-card-title">${esc(t.title)}</div>
                   <div class="roadmap-card-meta">
                     <span class="badge badge-${t.type}" style="font-size:9px">${esc(t.type)}</span>
@@ -2714,6 +2735,109 @@ function renderRoadmap() {
       `).join("")}
     </div>
   `;
+
+  // --- Bind drag-and-drop ---
+  initRoadmapDragDrop();
+  // --- Bind 3D tilt ---
+  initRoadmapTilt();
+}
+
+// --- Roadmap drag-and-drop ---
+let roadmapDragId = null;
+
+function initRoadmapDragDrop() {
+  const cards = document.querySelectorAll(".roadmap-card[draggable]");
+  const columns = document.querySelectorAll(".roadmap-cards");
+
+  cards.forEach(card => {
+    card.addEventListener("dragstart", e => {
+      roadmapDragId = card.dataset.ticketId;
+      card.classList.add("dragging");
+      e.dataTransfer.effectAllowed = "move";
+      e.dataTransfer.setData("text/plain", roadmapDragId);
+      // Prevent click from firing after drag
+      card._dragStarted = true;
+    });
+
+    card.addEventListener("dragend", () => {
+      card.classList.remove("dragging");
+      columns.forEach(col => col.classList.remove("drag-over"));
+      roadmapDragId = null;
+      // Suppress click after drag
+      setTimeout(() => { card._dragStarted = false; }, 0);
+    });
+
+    // Override onclick to suppress after drag
+    const origClick = card.onclick;
+    card.onclick = function(e) {
+      if (this._dragStarted) { this._dragStarted = false; return; }
+      if (origClick) origClick.call(this, e);
+    };
+  });
+
+  columns.forEach(col => {
+    col.addEventListener("dragover", e => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+      col.classList.add("drag-over");
+    });
+
+    col.addEventListener("dragleave", e => {
+      // Only remove if leaving the column itself
+      if (!col.contains(e.relatedTarget)) {
+        col.classList.remove("drag-over");
+      }
+    });
+
+    col.addEventListener("drop", e => {
+      e.preventDefault();
+      col.classList.remove("drag-over");
+      const ticketId = e.dataTransfer.getData("text/plain");
+      const newStatus = col.dataset.status;
+      if (!ticketId || !newStatus) return;
+
+      const t = DATA.tickets.find(x => x.id === ticketId);
+      if (!t || t.status === newStatus) return;
+
+      const oldStatus = t.status;
+      t.status = newStatus;
+      t.updatedAt = now();
+      const statusLabel = { open: "Backlog", progress: "In Progress", review: "Review", done: "Done" };
+      const act = {
+        action: newStatus === "done" ? "complete" : "update",
+        ticketId: t.id,
+        title: `${t.title} \u2192 ${statusLabel[newStatus] || newStatus}`,
+        time: now()
+      };
+      addActivity(act.action, act.ticketId, act.title);
+      apiUpdateTicket(t.id, { status: t.status, updatedAt: t.updatedAt }, act);
+      renderRoadmap();
+      showToast(`Moved to ${statusLabel[newStatus] || newStatus}`);
+    });
+  });
+}
+
+// --- Roadmap 3D tilt (Apple TV style) ---
+function initRoadmapTilt() {
+  const cards = document.querySelectorAll(".roadmap-card");
+  const MAX_TILT = 4; // degrees — subtle
+
+  cards.forEach(card => {
+    card.addEventListener("mousemove", e => {
+      const rect = card.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      const centerX = rect.width / 2;
+      const centerY = rect.height / 2;
+      const rotateY = ((x - centerX) / centerX) * MAX_TILT;
+      const rotateX = ((centerY - y) / centerY) * MAX_TILT;
+      card.style.transform = `perspective(600px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(-1px)`;
+    });
+
+    card.addEventListener("mouseleave", () => {
+      card.style.transform = "";
+    });
+  });
 }
 
 // --- Boot: load data from server, migrate localStorage, render ---

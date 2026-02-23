@@ -2527,6 +2527,26 @@ function generatePromptForTicket(id) {
   renderPromptLab();
 }
 
+function getKBContextForArea(area) {
+  const ctx = {
+    login:      "Login Screen: PIN-based local auth, session management, splash screen, lockout after failed attempts. No remote auth server. Key concern: PIN storage security, session timeout handling.",
+    agents:     "Agents: AI personas with classifications (Observer, Analyst, Orchestrator, Operator, Archivist). Managed by a dedicated server on port 3009 via REST API. Each agent has capabilities, memory settings, behavior config, and collaborator links. Agent nodes in flows reference agents by ID. Key files: agents.js, agentEditor.js, agentsClient.js.",
+    flows:      "Flows & Canvas: Visual workflow editor with infinite pan/zoom canvas. Nodes are placed and connected with edges. SubFlows embed other flows as reusable steps. Inspector panel has Properties, Library, and Agents tabs. State managed through central dispatch/reduce store. Key files: editor.js, dragCreate.js, nodeView.js, pan.js, camera.js, schema.js.",
+    data:       "Data: Local-first data management \u2014 connections to external sources, file uploads, knowledge bases for RAG. All files stored locally. Data preview for inspecting contents before use in flows. Key files: storage/flows.js and the data management UI components.",
+    interfaces: "Interfaces: Visual UI builder for creating front-ends connected to flows. Grid/flex layout, pre-built components (inputs, buttons, displays), and live preview. Allows non-technical users to interact with complex flows through simple forms.",
+    community:  "Community: Marketplace for sharing flows/agents/templates, threaded discussions, personal storefronts (My Store), ratings and reviews, search/filter. Features 3D tilt card effects and collapsible categories. Key files: community.js, communityMarketplace.js, communityMyStore.js.",
+    showcase:   "Showcase: Curated gallery of community-built apps. Grid layout with full-screen viewer, featured picks, and category browsing. Designed to inspire and demonstrate platform capabilities.",
+    settings:   "Settings: API provider configuration (OpenAI, Anthropic, local models), backend service connections, MCP server management, user account/profile, and theme selection. All settings persist locally.",
+    security:   "Security: Sovereignty-first model \u2014 all data local, no telemetry, opt-in remote services. Key concerns: PIN storage, API key encryption at rest, input sanitization (XSS prevention), Electron sandboxing, Content Security Policy headers.",
+    structure:  "App Structure: Vanilla JS with ES modules, no frameworks. Layered architecture (UI > Canvas > State > Graph > Runtime > Storage > API). Single CSS file with custom properties for theming. Electron packaging for desktop. No build step required for development.",
+    ux:         "UX & Design: 6 themes using CSS custom properties. Consistent 44px header, 11px uppercase tab labels, 150ms transitions, color-mix() for transparency. Empty states with centered icon+message. 6px themed scrollbars. All components reference theme variables, never hard-coded colors.",
+    perf:       "Performance: Canvas rendering with DOM nodes (not canvas/WebGL). Potential concerns: large flow re-renders, memory with many nodes, DOM update batching, localStorage size limits, efficient edge routing calculations.",
+    docs:       "Documentation: Knowledge base maintained in the BPM portal. Inline code comments follow JSDoc conventions where present. README covers setup and architecture. No external documentation site currently.",
+    portal:     "Dev Dashboard (BPM): Separate self-contained portal for project management. SQLite-backed API server, ticket tracking, prompt generation, knowledge base, kanban roadmap. Fully independent from the BentoBase app \u2014 no shared code, imports, or data.",
+  };
+  return ctx[area] || "";
+}
+
 function buildPrompt(ticket, type) {
   const lines = [];
   const divider = "---";
@@ -2553,6 +2573,14 @@ function buildPrompt(ticket, type) {
       ticket.files.split(",").map(f => f.trim()).filter(Boolean).forEach(f => {
         lines.push(`- \`${f}\``);
       });
+      lines.push("");
+    }
+
+    const kbCtx = getKBContextForArea(ticket.area);
+    if (kbCtx) {
+      lines.push("## Area Context (from Knowledge Base)");
+      lines.push("");
+      lines.push(kbCtx);
       lines.push("");
     }
 
@@ -2644,11 +2672,15 @@ let kbSection = "architecture";
 const KB_SECTIONS = {
   architecture: { label: "Architecture", render: renderKBArchitecture },
   fileMap: { label: "File Map", render: renderKBFileMap },
-  patterns: { label: "Patterns", render: renderKBPatterns },
-  state: { label: "State & Store", render: renderKBState },
+  howItWorks: { label: "How It Works", render: renderKBHowItWorks },
+  flowsCanvas: { label: "Flows & Canvas", render: renderKBFlowsCanvas },
   nodes: { label: "Node System", render: renderKBNodes },
-  themes: { label: "Theming", render: renderKBThemes },
   agents: { label: "Agents", render: renderKBAgents },
+  dataInterfaces: { label: "Data & Interfaces", render: renderKBDataInterfaces },
+  communityShowcase: { label: "Community & Showcase", render: renderKBCommunityShowcase },
+  loginSettings: { label: "Login & Settings", render: renderKBLoginSettings },
+  themes: { label: "Theming & UX", render: renderKBThemes },
+  security: { label: "Security", render: renderKBSecurity },
   conventions: { label: "Conventions", render: renderKBConventions },
 };
 
@@ -2677,295 +2709,468 @@ function setKBSection(key) {
 function renderKBArchitecture() {
   document.getElementById("kb-content").innerHTML = `
     <h2>Architecture Overview</h2>
-    <p>BentoBase is a <strong>sovereign-first AI flow editor</strong> built as a vanilla JavaScript single-page application. It uses a custom unidirectional state store (dispatch/reduce pattern), file-backed JSON persistence, and CSS custom properties for theming.</p>
+    <p>BentoBase is a <strong>sovereignty-first AI flow editor</strong>. It lets users visually build AI workflows by connecting nodes on a canvas, define intelligent agents, and manage data — all without sending anything to the cloud unless they choose to.</p>
 
     <h3>Core Principles</h3>
-    <p><strong>No frameworks.</strong> Pure vanilla JS with ES module imports. No React, no Vue, no build step beyond optional Electron packaging.</p>
-    <p><strong>Declarative nodes.</strong> Nodes carry metadata and annotations but no execution logic in the graph itself. Execution is handled by a separate runtime layer.</p>
-    <p><strong>Sovereignty.</strong> Data stays local. All flows, agents, and settings persist to local JSON files. Remote services are opt-in and scoped.</p>
+    <p><strong>No frameworks.</strong> The app is built with plain JavaScript and standard web technologies. There are no third-party UI libraries like React or Vue. This keeps the codebase simple and under full control.</p>
+    <p><strong>Declarative nodes.</strong> Nodes on the canvas describe <em>what</em> should happen (metadata, labels, connections) but don't contain execution logic themselves. A separate runtime layer handles the actual processing.</p>
+    <p><strong>Data stays local.</strong> All user data — flows, agents, settings — is saved to local files on the user's machine. Cloud services are available but always opt-in and scoped to specific tasks.</p>
+    <p><strong>Electron-ready.</strong> The app runs in a browser during development and can be packaged as a native desktop application using Electron.</p>
 
-    <h3>Layer Diagram</h3>
-    <pre><code>UI Layer        \u2502 editor.js, nodeView.js, agents.js, shell.js
-Canvas Layer    \u2502 pan.js, camera.js, dragCreate.js, connect.js
-State Layer     \u2502 store.js, actions.js, reducer.js, schema.js
-Graph Layer     \u2502 nodeDefaults.js, schemaHints.js, topoSort.js
-Runtime Layer   \u2502 nodes/*.js (executors per node type)
-Storage Layer   \u2502 flows.js (file-backed JSON CRUD)
-API Layer       \u2502 mcpClient.js, agentsClient.js</code></pre>
+    <h3>How the App is Organized</h3>
+    <p>The app is built in layers, where each layer has a specific job:</p>
+    <pre><code>UI Layer        \u2502 What the user sees and interacts with (tabs, panels, forms)
+Canvas Layer    \u2502 The visual graph editor (pan, zoom, drag, connect nodes)
+State Layer     \u2502 Manages all app data in one central place
+Graph Layer     \u2502 Defines node types, sizes, categories, and validation
+Runtime Layer   \u2502 Executes the workflow when a flow is run
+Storage Layer   \u2502 Reads and writes flows/agents to local JSON files
+API Layer       \u2502 Communicates with external services (MCP servers, agents server)</code></pre>
 
-    <h3>Data Flow</h3>
-    <p>User interaction \u2192 <code>store.dispatch(action)</code> \u2192 reducer produces new state \u2192 <code>renderEditor()</code> re-renders the UI from state. State is the single source of truth.</p>
+    <h3>How a User Action Flows Through the System</h3>
+    <p>When a user does something (like dragging a node), the app follows this path:</p>
+    <pre><code>1. User interacts with the UI (click, drag, type)
+2. The UI dispatches an "action" describing what happened
+3. A central reducer processes the action and produces updated state
+4. The UI re-renders based on the new state
+5. If the change affects saved data, the storage layer writes it to disk</code></pre>
+    <p>This one-way flow keeps things predictable: the current state is always the single source of truth.</p>
   `;
 }
 
 function renderKBFileMap() {
   document.getElementById("kb-content").innerHTML = `
     <h2>File Map</h2>
+    <p>Every file in the BentoBase app has a specific role. Here's where to find things:</p>
+
+    <h3>State Management (the brain)</h3>
     <table class="kb-table">
-      <thead><tr><th>Path</th><th>Purpose</th></tr></thead>
+      <thead><tr><th>File</th><th>What it does</th></tr></thead>
       <tbody>
-        <tr><td><code>src/state/schema.js</code></td><td>NodeType enum, factory functions (createNode, createAgentNode, createSubFlowNode, etc.)</td></tr>
-        <tr><td><code>src/state/actions.js</code></td><td>ActionType enum \u2014 all dispatch action strings</td></tr>
-        <tr><td><code>src/state/store.js</code></td><td>Unidirectional store: getState, dispatch, subscribe</td></tr>
-        <tr><td><code>src/state/reducer.js</code></td><td>Main reducer handling all action types</td></tr>
-        <tr><td><code>src/graph/nodeDefaults.js</code></td><td>NODE_CATEGORIES, NODE_TYPES, getNodeSize, getNodeCategory, makeDefaultPorts</td></tr>
-        <tr><td><code>src/graph/schemaHints.js</code></td><td>Upstream schema inference for port suggestions</td></tr>
-        <tr><td><code>src/canvas/dragCreate.js</code></td><td>Drag-to-create handler for palette, library, and agents drops</td></tr>
-        <tr><td><code>src/canvas/pan.js</code></td><td>Canvas pan/zoom via pointer events</td></tr>
-        <tr><td><code>src/canvas/camera.js</code></td><td>Viewport transform math (applyTransform)</td></tr>
-        <tr><td><code>src/ui/editor.js</code></td><td>Main editor UI: topbar, palette, canvas, inspector (Properties + Library + Agents tabs)</td></tr>
-        <tr><td><code>src/ui/nodeView.js</code></td><td>Node HTML rendering, shape classes, port rendering</td></tr>
-        <tr><td><code>src/ui/agents.js</code></td><td>Agents workspace tab (full CRUD, list/detail/editor views)</td></tr>
-        <tr><td><code>src/ui/agentEditor.js</code></td><td>Agent editor form, CLASSIFICATIONS definition</td></tr>
-        <tr><td><code>src/ui/shell.js</code></td><td>App shell: tab bar, theme switching, route management</td></tr>
-        <tr><td><code>src/storage/flows.js</code></td><td>Flow CRUD: listFlows, loadFlow, saveFlow, deleteFlow, duplicateFlow</td></tr>
-        <tr><td><code>src/api/mcpClient.js</code></td><td>MCP server communication for flow execution</td></tr>
-        <tr><td><code>src/api/agentsClient.js</code></td><td>REST client for agents server (port 3009)</td></tr>
-        <tr><td><code>src/app.css</code></td><td>All styles: themes, layout, components (~16k lines)</td></tr>
-        <tr><td><code>src/runtime/nodes/*.js</code></td><td>Per-node-type executors (conditionalRouting, sessionMemory, etc.)</td></tr>
+        <tr><td><code>src/state/schema.js</code></td><td>Defines all node types and contains the factory functions that create new nodes, edges, agents, and subflows</td></tr>
+        <tr><td><code>src/state/actions.js</code></td><td>Lists every action the app can perform (add node, move node, load flow, etc.)</td></tr>
+        <tr><td><code>src/state/store.js</code></td><td>The central data store \u2014 holds the current state and notifies the UI when things change</td></tr>
+        <tr><td><code>src/state/reducer.js</code></td><td>Processes actions and updates the state accordingly</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Graph & Nodes (the building blocks)</h3>
+    <table class="kb-table">
+      <thead><tr><th>File</th><th>What it does</th></tr></thead>
+      <tbody>
+        <tr><td><code>src/graph/nodeDefaults.js</code></td><td>Defines categories, sizes, and default settings for each node type</td></tr>
+        <tr><td><code>src/graph/schemaHints.js</code></td><td>Suggests port connections based on what upstream nodes output</td></tr>
+        <tr><td><code>src/runtime/nodes/*.js</code></td><td>One file per node type \u2014 contains the actual execution logic (conditional routing, memory, etc.)</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Canvas (the visual editor)</h3>
+    <table class="kb-table">
+      <thead><tr><th>File</th><th>What it does</th></tr></thead>
+      <tbody>
+        <tr><td><code>src/canvas/dragCreate.js</code></td><td>Handles dragging new nodes onto the canvas from the palette, library, or agents tab</td></tr>
+        <tr><td><code>src/canvas/pan.js</code></td><td>Lets users pan and zoom the canvas with mouse or trackpad</td></tr>
+        <tr><td><code>src/canvas/camera.js</code></td><td>Math for converting between screen coordinates and canvas coordinates</td></tr>
+        <tr><td><code>src/canvas/connect.js</code></td><td>Handles drawing edges (connections) between node ports</td></tr>
+      </tbody>
+    </table>
+
+    <h3>User Interface (what users see)</h3>
+    <table class="kb-table">
+      <thead><tr><th>File</th><th>What it does</th></tr></thead>
+      <tbody>
+        <tr><td><code>src/ui/editor.js</code></td><td>The main flow editor \u2014 toolbar, node palette, canvas, and the inspector panel (Properties, Library, Agents tabs)</td></tr>
+        <tr><td><code>src/ui/nodeView.js</code></td><td>Renders individual nodes on the canvas (shapes, labels, ports, badges)</td></tr>
+        <tr><td><code>src/ui/agents.js</code></td><td>The Agents workspace tab \u2014 list, detail, and editor views for managing agents</td></tr>
+        <tr><td><code>src/ui/agentEditor.js</code></td><td>The form for creating and editing agents, including classification options</td></tr>
+        <tr><td><code>src/ui/shell.js</code></td><td>The app shell \u2014 top tab bar, theme switcher, and page navigation</td></tr>
+        <tr><td><code>src/ui/community.js</code></td><td>Community page \u2014 marketplace and discussion features</td></tr>
+        <tr><td><code>src/ui/communityMarketplace.js</code></td><td>Marketplace browsing, ratings, search, and filtering</td></tr>
+        <tr><td><code>src/ui/communityMyStore.js</code></td><td>User's own store for publishing and managing shared items</td></tr>
+        <tr><td><code>src/app.css</code></td><td>All visual styles \u2014 themes, layout, every component in the app</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Storage & APIs (saving and communicating)</h3>
+    <table class="kb-table">
+      <thead><tr><th>File</th><th>What it does</th></tr></thead>
+      <tbody>
+        <tr><td><code>src/storage/flows.js</code></td><td>Saves and loads flows from local JSON files (create, read, update, delete, duplicate)</td></tr>
+        <tr><td><code>src/api/mcpClient.js</code></td><td>Communicates with MCP servers for flow execution</td></tr>
+        <tr><td><code>src/api/agentsClient.js</code></td><td>Communicates with the agents server (runs on port 3009)</td></tr>
       </tbody>
     </table>
   `;
 }
 
-function renderKBPatterns() {
+function renderKBHowItWorks() {
   document.getElementById("kb-content").innerHTML = `
-    <h2>Code Patterns</h2>
+    <h2>How It Works</h2>
+    <p>This section explains the key patterns used throughout BentoBase. Understanding these will help when reading or modifying any part of the app.</p>
 
-    <h3>Adding a New Node Type</h3>
-    <p>Follow this checklist when adding any new node type to the system:</p>
-    <pre><code>1. schema.js       \u2192 Add to NodeType enum, create factory function
-2. nodeDefaults.js  \u2192 Add config, category handler, sizing
-3. dragCreate.js    \u2192 Add drop handler with custom ports/params
-4. nodeView.js      \u2192 Add shape class, rendering attributes
-5. app.css          \u2192 Add node-specific styles
-6. (optional) runtime/nodes/  \u2192 Add executor if node has runtime behavior</code></pre>
+    <h3>The State Store (Central Data)</h3>
+    <p>The app keeps all of its current data in a single "store." Think of it like a central database that the entire app reads from and writes to. When something changes, the store notifies the UI to update.</p>
+    <pre><code>What's in the store:
+\u2022 The current flow (its nodes, edges, viewport position)
+\u2022 Which nodes are selected
+\u2022 The navigation stack (breadcrumb trail when inside sub-flows)
+\u2022 The clipboard (for copy/paste)</code></pre>
 
-    <h3>Inspector Tab Pattern</h3>
-    <p>The inspector uses a tab system. To add a new tab:</p>
-    <pre><code>1. Add &lt;button class="panel-tab" data-tab="name"&gt; in HTML
-2. Add &lt;div class="panel-body panel-tab-content" id="name-body" data-tab="name"&gt;
-3. Add element ref: const nameBody = root.querySelector("#name-body")
-4. Add to switchInspectorTab(): else if (tabName === "name") renderNameTab()
-5. Implement renderNameTab() function</code></pre>
-
-    <h3>Drag-and-Drop MIME Types</h3>
+    <h3>Actions (How Changes Happen)</h3>
+    <p>Every change goes through an "action" \u2014 a simple message that describes what happened. The most common ones:</p>
     <table class="kb-table">
-      <thead><tr><th>MIME Type</th><th>Source</th><th>Creates</th></tr></thead>
+      <thead><tr><th>Action</th><th>What it does</th></tr></thead>
       <tbody>
-        <tr><td><code>application/x-ssf-node-type</code></td><td>Palette tiles</td><td>Standard node</td></tr>
-        <tr><td><code>application/x-ssf-flow-id</code></td><td>Library tab</td><td>SubFlow node</td></tr>
-        <tr><td><code>application/x-ssf-agent-id</code></td><td>Agents tab</td><td>Agent node</td></tr>
+        <tr><td>NODE_ADD</td><td>Places a new node on the canvas</td></tr>
+        <tr><td>NODE_REMOVE</td><td>Deletes a node and its connections</td></tr>
+        <tr><td>NODE_MOVE</td><td>Updates where a node sits on the canvas</td></tr>
+        <tr><td>EDGE_ADD</td><td>Draws a connection between two node ports</td></tr>
+        <tr><td>FLOW_LOAD</td><td>Opens a saved flow (replaces current canvas contents)</td></tr>
+        <tr><td>SELECT_NODE</td><td>Highlights a node so its properties appear in the inspector</td></tr>
       </tbody>
     </table>
 
-    <h3>Cycle Detection</h3>
-    <p>Three layers prevent recursive loops:</p>
-    <pre><code>1. wouldCreateCycle()       \u2014 SubFlow drops: checks ancestor + descendant chains
-2. wouldCreateAgentCycle()  \u2014 Agent drops: checks agent-associated flow chains
-3. Kahn's topological sort  \u2014 Execution time: catches intra-flow DAG cycles</code></pre>
+    <h3>Rendering Cycle</h3>
+    <p>When the state changes, the app re-renders the UI from scratch based on the new state. This is simple and predictable \u2014 the UI is always a direct reflection of the data.</p>
+
+    <h3>Adding a New Node Type (Checklist)</h3>
+    <p>When a new type of node needs to be added, these files are typically touched:</p>
+    <pre><code>1. schema.js       \u2192 Register the type and create a factory function for it
+2. nodeDefaults.js  \u2192 Define its category, default size, and port configuration
+3. dragCreate.js    \u2192 Handle dropping it onto the canvas
+4. nodeView.js      \u2192 Define how it looks (shape, colors, labels)
+5. app.css          \u2192 Add any custom visual styles
+6. runtime/nodes/   \u2192 (If it runs logic) Add an executor file</code></pre>
+
+    <h3>Adding a New Inspector Tab (Checklist)</h3>
+    <p>The inspector panel on the right side of the flow editor uses a tab system. To add a new tab:</p>
+    <pre><code>1. Add a tab button in the editor HTML
+2. Add a content area for the tab body
+3. Register it in the tab-switching function
+4. Write a render function that fills in the content</code></pre>
+
+    <h3>Drag-and-Drop</h3>
+    <p>Users create nodes by dragging from three sources, each identified by a specific data type:</p>
+    <table class="kb-table">
+      <thead><tr><th>Drag source</th><th>What it creates</th></tr></thead>
+      <tbody>
+        <tr><td>Node palette (left sidebar)</td><td>A standard node of the selected type</td></tr>
+        <tr><td>Library tab (inspector)</td><td>A SubFlow node referencing a saved flow</td></tr>
+        <tr><td>Agents tab (inspector)</td><td>An Agent node referencing a defined agent</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Recursion Safety</h3>
+    <p>The app prevents infinite loops when flows reference each other. Three safety checks exist:</p>
+    <pre><code>1. SubFlow drop check \u2014 Prevents embedding a flow inside itself or its ancestors
+2. Agent drop check   \u2014 Prevents agent-to-flow-to-agent circular chains
+3. Execution sort     \u2014 At runtime, detects any remaining cycles in the graph</code></pre>
   `;
 }
 
-function renderKBState() {
+function renderKBFlowsCanvas() {
   document.getElementById("kb-content").innerHTML = `
-    <h2>State & Store</h2>
+    <h2>Flows & Canvas</h2>
+    <p>The flow editor is the heart of BentoBase. Users build AI workflows by placing nodes on a canvas and connecting them with edges.</p>
 
-    <h3>Store API</h3>
-    <pre><code>const store = createStore(reducer, initialState);
-store.getState()          // \u2192 current state snapshot
-store.dispatch({ type })  // \u2192 runs reducer, notifies subscribers
-store.subscribe(fn)       // \u2192 called after every dispatch</code></pre>
+    <h3>What is a Flow?</h3>
+    <p>A flow is a visual workflow \u2014 a collection of nodes connected by edges that defines how data moves through a processing pipeline. Each flow has:</p>
+    <pre><code>\u2022 A name and description
+\u2022 A list of nodes (the processing steps)
+\u2022 A list of edges (the connections between steps)
+\u2022 A viewport (where the camera is positioned)
+\u2022 Associated agents (which AI agents participate)</code></pre>
 
-    <h3>State Shape</h3>
-    <pre><code>{
-  flow: {                  // Current flow being edited
-    id, name, description,
-    agents: [],            // Agent IDs associated with this flow
-    nodes: [],             // Array of node objects
-    edges: [],             // Array of edge objects
-    viewport: { panX, panY, zoom }
-  },
-  selectedNodes: [],       // Array of selected node IDs
-  flowStack: [],           // Breadcrumb for sub-flow navigation
-  clipboard: null,         // Copy/paste buffer
-}</code></pre>
+    <h3>The Canvas</h3>
+    <p>The canvas is an infinite 2D workspace where nodes are placed. Users can:</p>
+    <pre><code>\u2022 Pan (scroll) the view in any direction
+\u2022 Zoom in and out
+\u2022 Drag nodes to reposition them
+\u2022 Draw connections between ports by clicking and dragging
+\u2022 Select nodes to see their properties in the inspector
+\u2022 Drop new nodes from the palette, library, or agents tab</code></pre>
 
-    <h3>Key Actions</h3>
+    <h3>SubFlows (Nested Flows)</h3>
+    <p>A flow can contain another flow as a "SubFlow" node. This allows complex workflows to be broken into manageable pieces. When you double-click a SubFlow node, you navigate inside it. A breadcrumb trail lets you navigate back up to the parent flow.</p>
+    <p>Inside a SubFlow, a special "Flow Interface" node shows where data enters and exits, connecting the inner flow to the outer one.</p>
+
+    <h3>The Inspector Panel</h3>
+    <p>The inspector sits on the right side of the editor and has three tabs:</p>
     <table class="kb-table">
-      <thead><tr><th>Action</th><th>Purpose</th></tr></thead>
+      <thead><tr><th>Tab</th><th>Purpose</th></tr></thead>
       <tbody>
-        <tr><td><code>NODE_ADD</code></td><td>Add a node to the flow</td></tr>
-        <tr><td><code>NODE_REMOVE</code></td><td>Delete node(s) and connected edges</td></tr>
-        <tr><td><code>NODE_MOVE</code></td><td>Update node position(s)</td></tr>
-        <tr><td><code>SELECT_NODE</code></td><td>Set selection to a single node</td></tr>
-        <tr><td><code>EDGE_ADD</code></td><td>Connect two ports</td></tr>
-        <tr><td><code>FLOW_LOAD</code></td><td>Replace current flow state</td></tr>
+        <tr><td>Properties</td><td>Shows details of the selected node \u2014 name, type, metadata, annotations, ports</td></tr>
+        <tr><td>Library</td><td>Lists all saved flows. Drag one onto the canvas to embed it as a SubFlow.</td></tr>
+        <tr><td>Agents</td><td>Lists all defined agents. Drag one onto the canvas to create an Agent node.</td></tr>
       </tbody>
     </table>
+
+    <h3>Storage</h3>
+    <p>Flows are saved as JSON files on the local filesystem. The storage layer provides standard create, read, update, delete, and duplicate operations. Flows are auto-saved when changes are made.</p>
   `;
 }
 
 function renderKBNodes() {
   document.getElementById("kb-content").innerHTML = `
     <h2>Node System</h2>
+    <p>Nodes are the building blocks of every flow. Each node represents a step in the workflow and has inputs (where data comes in) and outputs (where data goes out).</p>
 
-    <h3>Node Types by Category</h3>
+    <h3>Node Categories</h3>
     <table class="kb-table">
-      <thead><tr><th>Category</th><th>Types</th><th>I/O</th></tr></thead>
+      <thead><tr><th>Category</th><th>What it does</th><th>Examples</th></tr></thead>
       <tbody>
-        <tr><td>Input</td><td>FileInput, SensorInput, FormInput, APIInput</td><td>0 in / 1 out</td></tr>
-        <tr><td>Signal</td><td>NetworkSignal, SystemHealthSignal, ExternalEventSignal</td><td>0-1 in / 1 out</td></tr>
-        <tr><td>Transform</td><td>NormalizeClean, FormatConversion, ParseSegment, ExtractFields, ComposeReshape</td><td>1 in / 1 out</td></tr>
-        <tr><td>Masking</td><td>TextAnonymization, ImageRedaction, FieldLevelMasking, TokenSubstitution</td><td>1 in / 1 out</td></tr>
-        <tr><td>Model</td><td>LocalModel, RemoteModel, MediaGenerator, DomainSpecificModel</td><td>4 in / 3 out</td></tr>
-        <tr><td>Memory</td><td>ShortTermMemory, LongTermMemory, SessionMemory</td><td>1 in / 1+ out</td></tr>
-        <tr><td>Routing</td><td>ConditionalRouting, PriorityRouting, WeightedRouting</td><td>1-2 in / 2+ out</td></tr>
-        <tr><td>Output</td><td>TextOutput, MediaOutput, DatabaseOutput, WebhookOutput</td><td>1-2 in / 0-1 out</td></tr>
-        <tr><td>Preview</td><td>MediaPreview</td><td>1 in / 1 out</td></tr>
-        <tr><td>SubFlow</td><td>(dynamic, from Library tab)</td><td>dynamic</td></tr>
-        <tr><td>Agent</td><td>(dynamic, from Agents tab)</td><td>1 in / 1 out</td></tr>
+        <tr><td><strong>Input</strong></td><td>Brings data into the flow from external sources</td><td>File input, API input, form input, sensor input</td></tr>
+        <tr><td><strong>Signal</strong></td><td>Triggers the flow based on events or conditions</td><td>Network signal, system health check, external event</td></tr>
+        <tr><td><strong>Transform</strong></td><td>Cleans, reshapes, or converts data passing through</td><td>Normalize, format conversion, extract fields, parse</td></tr>
+        <tr><td><strong>Masking</strong></td><td>Protects sensitive data by hiding or replacing it</td><td>Text anonymization, image redaction, token substitution</td></tr>
+        <tr><td><strong>Model</strong></td><td>Sends data to an AI model for processing</td><td>Local model, remote model (GPT, Claude), media generator</td></tr>
+        <tr><td><strong>Memory</strong></td><td>Stores and retrieves information across interactions</td><td>Session memory, short-term memory, long-term memory</td></tr>
+        <tr><td><strong>Routing</strong></td><td>Directs data down different paths based on conditions</td><td>Conditional routing, priority routing, weighted routing</td></tr>
+        <tr><td><strong>Output</strong></td><td>Delivers results to the user or external systems</td><td>Text output, media output, database write, webhook</td></tr>
+        <tr><td><strong>SubFlow</strong></td><td>Embeds an entire saved flow as a single reusable step</td><td>(Created by dragging from the Library tab)</td></tr>
+        <tr><td><strong>Agent</strong></td><td>References a defined AI agent with specific capabilities</td><td>(Created by dragging from the Agents tab)</td></tr>
       </tbody>
     </table>
 
-    <h3>Node Object Shape</h3>
-    <pre><code>{
-  id: "node_xxx",
-  type: "RemoteModel",
-  title: "GPT-4",
-  position: { x: 200, y: 100 },
-  ports: {
-    inputs: [{ id, name, side, kind, dock, index, label }],
-    outputs: [{ id, name, side, kind, dock, index, label }]
-  },
-  params: { ... },       // Node-type-specific config
-  metadata: { name, description, notes, tags },
-  annotations: { intent, flags }
-}</code></pre>
+    <h3>What a Node Contains</h3>
+    <p>Every node on the canvas stores:</p>
+    <pre><code>\u2022 A unique ID and type (e.g., "RemoteModel")
+\u2022 A title the user can rename
+\u2022 Its position on the canvas (x, y coordinates)
+\u2022 Input and output ports (connection points)
+\u2022 Parameters specific to that node type (e.g., which model to use)
+\u2022 Metadata: name, description, notes, and tags
+\u2022 Annotations: behavioral intent and flags (async, stateful, etc.)</code></pre>
 
-    <h3>Agent Classification System</h3>
-    <table class="kb-table">
-      <thead><tr><th>Classification</th><th>Color</th><th>Role</th></tr></thead>
-      <tbody>
-        <tr><td>Observer</td><td style="color:#6b7a8d">#6b7a8d</td><td>Perceives inputs, converts signal to data</td></tr>
-        <tr><td>Analyst</td><td style="color:#8b5cf6">#8b5cf6</td><td>Interprets information, generates plans</td></tr>
-        <tr><td>Orchestrator</td><td style="color:#d97706">#d97706</td><td>Coordinates agents, determines flow</td></tr>
-        <tr><td>Operator</td><td style="color:#16a34a">#16a34a</td><td>Executes actions, uses tools and flows</td></tr>
-        <tr><td>Archivist</td><td style="color:#3b82f6">#3b82f6</td><td>Manages memory, retrieval, and storage</td></tr>
-      </tbody>
-    </table>
-  `;
-}
-
-function renderKBThemes() {
-  document.getElementById("kb-content").innerHTML = `
-    <h2>Theming</h2>
-    <p>BentoBase uses CSS custom properties for theming, with 6 built-in themes selectable via <code>html[data-theme]</code>.</p>
-
-    <h3>Theme Palette</h3>
-    <table class="kb-table">
-      <thead><tr><th>Theme</th><th>--bg</th><th>--focus</th><th>Aesthetic</th></tr></thead>
-      <tbody>
-        <tr><td>Marshmallow</td><td>#f7f7f7</td><td style="color:#7c5b45">#7c5b45</td><td>Light, warm, earthy</td></tr>
-        <tr><td>Mocha</td><td>#1b1613</td><td style="color:#e2b88f">#e2b88f</td><td>Dark, warm, caramel</td></tr>
-        <tr><td>Disco</td><td>#120b1f</td><td style="color:#00f5ff">#00f5ff</td><td>Dark, neon, vibrant</td></tr>
-        <tr><td>Ron Swanson</td><td>#0f1620</td><td style="color:#f6c177">#f6c177</td><td>Dark, whiskey/leather</td></tr>
-        <tr><td>Gringo</td><td>#f3e8d9</td><td style="color:#0a8f6a">#0a8f6a</td><td>Light, desert sand</td></tr>
-        <tr><td>Matrix</td><td>#050b06</td><td style="color:#00ff66">#00ff66</td><td>Dark, digital retro</td></tr>
-      </tbody>
-    </table>
-
-    <h3>CSS Variables</h3>
-    <pre><code>--bg          Background
---panel       Panel/sidebar background
---panel2      Elevated surface (cards, modals)
---text        Primary text
---muted       Secondary text, labels
---border      Border color (used at low opacity)
---focus       Accent/interactive color
---accentBg    Filled button background
---accentText  Text on accent background
---icon-filter invert(1) for dark themes</code></pre>
-
-    <h3>Adding a New Theme</h3>
-    <pre><code>html[data-theme="mytheme"] {
-  --bg: #...; --panel: #...; --panel2: #...;
-  --text: #...; --muted: #...; --border: #...;
-  --focus: #...; --accentBg: #...; --accentText: #...;
-  --icon-filter: none|invert(1);
-}</code></pre>
+    <h3>Ports and Edges</h3>
+    <p>Ports are the connection points on each node. Input ports are on the left, output ports on the right. An edge (connection line) runs from one node's output port to another node's input port, defining the flow of data.</p>
+    <p>Port types are descriptive labels (Data, Control, Signal) that help users understand what kind of information flows through, but aren't enforced by the system.</p>
   `;
 }
 
 function renderKBAgents() {
   document.getElementById("kb-content").innerHTML = `
-    <h2>Agents System</h2>
+    <h2>Agents</h2>
+    <p>Agents are AI personas with defined roles, capabilities, and behaviors. They represent the intelligent actors in a BentoBase workflow.</p>
 
-    <h3>Architecture</h3>
-    <p>Agents are managed by a separate server (port 3009) with REST CRUD endpoints. The UI communicates via <code>agentsClient.js</code>. Agent data is loaded into the <code>AGENTS</code> array (exported from <code>agents.js</code>) at runtime.</p>
+    <h3>What is an Agent?</h3>
+    <p>An agent is like a team member with a specific job description. Each agent has:</p>
+    <pre><code>\u2022 A name, avatar, and short descriptor
+\u2022 A classification (its role on the team \u2014 see below)
+\u2022 Requested capabilities (which AI models, data sources, and tools it needs)
+\u2022 Memory settings (how it remembers context between interactions)
+\u2022 Behavior settings (communication tone and style)
+\u2022 Collaborators (other agents it works with)</code></pre>
 
-    <h3>Agent Object Shape</h3>
-    <pre><code>{
-  id: "agent_xxx",
-  name: "Research Analyst",
-  initials: "RA",
-  avatar: null,               // Optional URL
-  descriptor: "Analyzes data",
-  description: "Long description...",
-  classification: "analyst",  // observer|analyst|orchestrator|operator|archivist
-  worksWith: ["agent_yyy"],   // Collaborator IDs
-  requestedCapabilities: {
-    models: ["GPT-4"],
-    data: ["documents"],
-    workflows: [{ name: "Research", sensitivity: "standard" }],
-    tools: ["search", "summarize"]
-  },
-  memory: { mode: "session" },
-  behavior: { tone: "professional" },
-  tags: ["research"]
-}</code></pre>
+    <h3>Agent Classifications</h3>
+    <p>Every agent is assigned one of five roles:</p>
+    <table class="kb-table">
+      <thead><tr><th>Classification</th><th>Role</th><th>Example</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Observer</strong></td><td>Watches for inputs and converts raw signals into structured data</td><td>A monitoring agent that watches for system events</td></tr>
+        <tr><td><strong>Analyst</strong></td><td>Interprets data, identifies patterns, and generates plans</td><td>A research agent that analyzes documents</td></tr>
+        <tr><td><strong>Orchestrator</strong></td><td>Coordinates other agents and decides which workflows to run</td><td>A manager agent that delegates tasks</td></tr>
+        <tr><td><strong>Operator</strong></td><td>Takes action \u2014 uses tools, runs flows, and produces output</td><td>A writer agent that generates content</td></tr>
+        <tr><td><strong>Archivist</strong></td><td>Manages memory, retrieval, and long-term knowledge storage</td><td>A librarian agent that indexes and recalls information</td></tr>
+      </tbody>
+    </table>
 
-    <h3>Agent Nodes in Flows</h3>
-    <p>Agent nodes are created by dragging from the inspector's Agents tab. They use the <code>createAgentNode()</code> factory and store <code>agentId</code> for reference. Recursion is prevented by <code>wouldCreateAgentCycle()</code>.</p>
+    <h3>Agents in Flows</h3>
+    <p>Users can drag agents from the inspector's Agents tab directly onto the canvas. This creates an Agent node with one input and one output port. The node references the original agent by ID, so changes to the agent definition are reflected everywhere it's used.</p>
 
-    <h3>Flow-Agent Association</h3>
-    <p>Each flow has an <code>agents[]</code> array containing agent IDs. This is used for the cycle detection system and for displaying agent assignments in the Library tab.</p>
+    <h3>Agent Server</h3>
+    <p>Agents are managed by a dedicated server (running on port 3009) that handles creating, reading, updating, and deleting agent records. The UI talks to this server through a REST API client.</p>
+  `;
+}
+
+function renderKBDataInterfaces() {
+  document.getElementById("kb-content").innerHTML = `
+    <h2>Data & Interfaces</h2>
+
+    <h3>Data Tab</h3>
+    <p>The Data tab is where users manage the information sources that feed into their flows. It includes:</p>
+    <pre><code>\u2022 Connections \u2014 Links to external data sources (databases, APIs, services)
+\u2022 Files \u2014 Uploaded documents, images, and other files stored locally
+\u2022 Knowledge Bases \u2014 Collections of indexed documents for retrieval-augmented generation
+\u2022 File Upload \u2014 Drag-and-drop or file picker for bringing new files into the system
+\u2022 Data Preview \u2014 Quick view of file contents and metadata before using in a flow</code></pre>
+    <p>All data stays local to the user's machine unless they explicitly configure a remote connection.</p>
+
+    <h3>Interfaces Tab</h3>
+    <p>The Interfaces tab lets users build front-end experiences that connect to their flows. Think of it as a simple UI builder:</p>
+    <pre><code>\u2022 Interface Editor \u2014 Visual editor for arranging UI components
+\u2022 Layout \u2014 Grid and flex-based positioning of elements
+\u2022 Components \u2014 Pre-built elements (text inputs, buttons, displays, file pickers)
+\u2022 Preview \u2014 Live preview of the interface before publishing</code></pre>
+    <p>Interfaces allow non-technical users to interact with complex flows through simple forms and dashboards rather than the node canvas.</p>
+
+    <h3>Key Files</h3>
+    <p>Data-related functionality lives primarily in the storage layer. Interface building is handled in the UI layer with its own editor and component library.</p>
+  `;
+}
+
+function renderKBCommunityShowcase() {
+  document.getElementById("kb-content").innerHTML = `
+    <h2>Community & Showcase</h2>
+
+    <h3>Community</h3>
+    <p>The Community page is where BentoBase users connect, share, and collaborate. It has several sections:</p>
+    <pre><code>\u2022 Marketplace \u2014 Browse and discover shared flows, agents, and templates from other users
+\u2022 Discussion \u2014 Threaded conversations about best practices, troubleshooting, and ideas
+\u2022 My Store \u2014 A personal storefront where users can publish and manage their own shared items
+\u2022 Ratings & Reviews \u2014 Rate and review marketplace items to help the community find quality content
+\u2022 Search & Filter \u2014 Find items by category, tags, rating, or text search</code></pre>
+    <p>The marketplace supports 3D tilt effects on cards and collapsible category sections. User avatars show photo images when available.</p>
+
+    <h3>Showcase</h3>
+    <p>The Showcase page is a curated gallery of applications and workflows built with BentoBase:</p>
+    <pre><code>\u2022 App Gallery \u2014 Grid of featured community-built applications
+\u2022 Full-Screen Viewer \u2014 Immersive view of individual showcase items
+\u2022 Featured Apps \u2014 Highlighted picks chosen by the team
+\u2022 Categories \u2014 Browse by use case (productivity, creative, research, etc.)</code></pre>
+    <p>The showcase is meant to inspire users and demonstrate what's possible with the platform.</p>
+
+    <h3>Key Files</h3>
+    <p>Community features are implemented across <code>community.js</code>, <code>communityMarketplace.js</code>, and <code>communityMyStore.js</code> in the UI layer.</p>
+  `;
+}
+
+function renderKBLoginSettings() {
+  document.getElementById("kb-content").innerHTML = `
+    <h2>Login & Settings</h2>
+
+    <h3>Login Screen</h3>
+    <p>The login screen is the first thing users see when opening BentoBase. It includes:</p>
+    <pre><code>\u2022 PIN Entry \u2014 Numeric passcode input for quick local access
+\u2022 Authentication Flow \u2014 The sequence from PIN entry to authenticated session
+\u2022 Session Management \u2014 Tracking active sessions and handling timeouts
+\u2022 Splash Screen \u2014 Brief branded loading screen shown on app start
+\u2022 Error States \u2014 Messages for wrong PIN, locked out, etc.
+\u2022 Lockout Logic \u2014 Temporary lock after too many failed attempts</code></pre>
+    <p>Authentication is local \u2014 there's no remote auth server. The PIN protects local data access on the user's machine.</p>
+
+    <h3>Settings</h3>
+    <p>The Settings page lets users configure the app to their preferences:</p>
+    <pre><code>\u2022 API Providers \u2014 Configure which AI model providers to use (OpenAI, Anthropic, local models, etc.)
+\u2022 Backend Services \u2014 Set up connections to supporting services
+\u2022 MCP Servers \u2014 Manage Model Context Protocol servers for flow execution
+\u2022 Account \u2014 User profile, display name, preferences
+\u2022 Theme \u2014 Choose between 6 visual themes (see Theming section)</code></pre>
+    <p>Settings persist locally and are never sent to external servers.</p>
+  `;
+}
+
+function renderKBSecurity() {
+  document.getElementById("kb-content").innerHTML = `
+    <h2>Security</h2>
+    <p>BentoBase follows a sovereignty-first security model. User data stays on their machine, and all external communication is opt-in.</p>
+
+    <h3>Security Principles</h3>
+    <pre><code>\u2022 Local-first \u2014 All data is stored on the user's machine, not in the cloud
+\u2022 Opt-in remote \u2014 Cloud services (AI APIs, MCP servers) require explicit configuration
+\u2022 No telemetry \u2014 The app does not phone home or collect usage data
+\u2022 PIN protection \u2014 Local access is gated behind a numeric PIN</code></pre>
+
+    <h3>Areas of Concern</h3>
+    <table class="kb-table">
+      <thead><tr><th>Area</th><th>What to watch for</th></tr></thead>
+      <tbody>
+        <tr><td>Auth & Identity</td><td>PIN storage, session tokens, lockout enforcement</td></tr>
+        <tr><td>Data Encryption</td><td>Sensitive data at rest (API keys, credentials)</td></tr>
+        <tr><td>Input Validation</td><td>Sanitizing user inputs to prevent XSS or injection</td></tr>
+        <tr><td>Permissions</td><td>What each part of the app can access and modify</td></tr>
+        <tr><td>API Keys & Secrets</td><td>Safe storage and transmission of provider API keys</td></tr>
+        <tr><td>CSP & Sandboxing</td><td>Content Security Policy headers, Electron sandboxing</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Electron Considerations</h3>
+    <p>When running as a desktop app via Electron, additional security measures apply: the renderer process is sandboxed, Node.js integration follows Electron security best practices, and file system access is scoped to the app's data directory.</p>
+  `;
+}
+
+function renderKBThemes() {
+  document.getElementById("kb-content").innerHTML = `
+    <h2>Theming & UX</h2>
+    <p>BentoBase uses a CSS custom property system for theming. Every color in the app references a theme variable, so switching themes instantly changes the entire look.</p>
+
+    <h3>Available Themes</h3>
+    <table class="kb-table">
+      <thead><tr><th>Theme</th><th>Feel</th><th>Background</th><th>Accent</th></tr></thead>
+      <tbody>
+        <tr><td>Marshmallow</td><td>Light, warm, earthy</td><td>Soft white</td><td style="color:#7c5b45">Warm brown</td></tr>
+        <tr><td>Mocha</td><td>Dark, warm, caramel</td><td>Deep brown</td><td style="color:#e2b88f">Golden caramel</td></tr>
+        <tr><td>Disco</td><td>Dark, neon, vibrant</td><td>Deep purple</td><td style="color:#00f5ff">Electric cyan</td></tr>
+        <tr><td>Ron Swanson</td><td>Dark, leather, whiskey</td><td>Navy blue</td><td style="color:#f6c177">Amber gold</td></tr>
+        <tr><td>Gringo</td><td>Light, sandy, desert</td><td>Warm sand</td><td style="color:#0a8f6a">Cactus green</td></tr>
+        <tr><td>Matrix</td><td>Dark, digital, retro</td><td>Near black</td><td style="color:#00ff66">Terminal green</td></tr>
+      </tbody>
+    </table>
+
+    <h3>How Theming Works</h3>
+    <p>Each theme defines a set of color variables. Every component in the app uses these variables instead of hard-coded colors. The key variables are:</p>
+    <pre><code>\u2022 --bg          \u2192 Page background
+\u2022 --panel       \u2192 Panel and sidebar backgrounds
+\u2022 --panel2      \u2192 Cards, modals, and elevated surfaces
+\u2022 --text        \u2192 Primary text color
+\u2022 --muted       \u2192 Secondary text, labels, subtle elements
+\u2022 --border      \u2192 Border color (used at low opacity via color-mix)
+\u2022 --focus       \u2192 Accent color for interactive elements
+\u2022 --accentBg    \u2192 Filled button backgrounds
+\u2022 --accentText  \u2192 Text on accent-colored backgrounds</code></pre>
+
+    <h3>UX Patterns</h3>
+    <pre><code>\u2022 Consistent 44px header height across the app
+\u2022 Uppercase 11px tab labels with bottom-border underlines
+\u2022 Subtle hover transitions (150ms) on all interactive elements
+\u2022 color-mix() for theme-aware transparency (instead of rgba)
+\u2022 6px scrollbars that blend with the theme
+\u2022 Empty states with centered icon + message pattern</code></pre>
+
+    <h3>Adding a New Theme</h3>
+    <p>To add a theme, define a new set of color variables under a theme attribute selector in the CSS. Then add the theme name to the theme selector dropdown in the app shell.</p>
   `;
 }
 
 function renderKBConventions() {
   document.getElementById("kb-content").innerHTML = `
     <h2>Conventions</h2>
+    <p>BentoBase follows consistent patterns throughout the codebase. Understanding these helps keep changes clean and predictable.</p>
 
-    <h3>Naming</h3>
+    <h3>Naming Patterns</h3>
     <table class="kb-table">
-      <thead><tr><th>Context</th><th>Convention</th><th>Example</th></tr></thead>
+      <thead><tr><th>What</th><th>Style</th><th>Examples</th></tr></thead>
       <tbody>
-        <tr><td>Files</td><td>camelCase</td><td><code>dragCreate.js</code>, <code>nodeView.js</code></td></tr>
-        <tr><td>Functions</td><td>camelCase</td><td><code>renderLibraryTab()</code>, <code>getNodeSize()</code></td></tr>
-        <tr><td>Constants</td><td>UPPER_SNAKE</td><td><code>NODE_CATEGORIES</code>, <code>ACTION_TYPE</code></td></tr>
-        <tr><td>CSS classes</td><td>kebab-case, BEM-lite</td><td><code>.library-tab-item</code>, <code>.badge-critical</code></td></tr>
-        <tr><td>IDs</td><td>prefix_uuid</td><td><code>node_abc123</code>, <code>flow_def456</code></td></tr>
+        <tr><td>File names</td><td>camelCase with .js extension</td><td>dragCreate.js, nodeView.js, agentEditor.js</td></tr>
+        <tr><td>Functions</td><td>camelCase, often verb-first</td><td>renderLibraryTab(), getNodeSize(), createEdge()</td></tr>
+        <tr><td>Constants</td><td>ALL_CAPS with underscores</td><td>NODE_CATEGORIES, ACTION_TYPE</td></tr>
+        <tr><td>CSS classes</td><td>kebab-case with component prefix</td><td>.library-tab-item, .badge-critical, .node-agent</td></tr>
+        <tr><td>Object IDs</td><td>prefix + underscore + UUID</td><td>node_abc123, flow_def456, agent_xyz789</td></tr>
       </tbody>
     </table>
 
     <h3>CSS Organization</h3>
-    <p>All styles live in <code>src/app.css</code> (~16k lines). Sections are marked with comment headers. New components follow existing <code>.library-tab-*</code> or <code>.agents-tab-*</code> patterns with consistent use of <code>color-mix()</code> for opacity and theme-aware colors.</p>
+    <p>All visual styles live in a single file (<code>src/app.css</code>). Sections are separated by comment headers. When adding new components, follow the pattern of existing ones (e.g., <code>.library-tab-*</code> or <code>.agents-tab-*</code>). Use <code>color-mix()</code> for theme-aware transparency instead of hard-coded rgba values.</p>
 
     <h3>State Management Rules</h3>
-    <pre><code>1. Never mutate state directly \u2014 always dispatch actions
-2. Reducer returns new state objects (shallow immutability)
-3. Side effects (file save) happen after reduce
-4. UI re-renders from state via renderEditor()
-5. No component-level state \u2014 module-level let variables are used for UI state</code></pre>
+    <pre><code>\u2022 Never change state directly \u2014 always go through the action/dispatch system
+\u2022 The reducer creates new state objects (doesn't modify existing ones)
+\u2022 Side effects (saving files) happen after the state update
+\u2022 The UI re-renders from state \u2014 it never stores its own separate copy of the data
+\u2022 Simple variables (let) are used for UI-only state like search filters and selections</code></pre>
 
     <h3>Import Style</h3>
-    <pre><code>// Named imports from local modules
-import { ActionType } from "../state/actions.js";
-import { loadFlow, saveFlow } from "../storage/flows.js";
+    <p>The app uses standard JavaScript module imports with full file extensions (no bundler). Imports use named exports and relative paths from the importing file.</p>
+    <pre><code>import { ActionType } from "../state/actions.js";
+import { loadFlow, saveFlow } from "../storage/flows.js";</code></pre>
 
-// Full .js extensions required (no bundler)
-// Relative paths from the importing file</code></pre>
+    <h3>Key Rules for Contributors</h3>
+    <pre><code>\u2022 Keep changes minimal and focused on the specific task
+\u2022 Mirror existing patterns rather than inventing new ones
+\u2022 Test empty states, error states, and edge cases
+\u2022 Don't add dependencies \u2014 the app has zero external libraries
+\u2022 Preserve existing behavior when refactoring
+\u2022 All data persistence is local-first by default</code></pre>
   `;
 }
 

@@ -225,7 +225,10 @@ function generateTicketImage(ticketId, title, type, area) {
   const typeVisual = typeMap[type] || "a symbolic object";
   const areaLabel = AREA_LABELS[area] || "";
 
-  const prompt = `A 2D Japanese flat illustration in ukiyo-e inspired style with clean bold outlines, flat color fills, and muted earth tones (indigo, vermillion, moss green, warm cream). No gradients, no 3D shading, no photorealism. The scene depicts ${typeVisual} representing the concept: "${title}"${areaLabel ? `, in the context of ${areaLabel}` : ""}. Minimal composition, negative space, subtle paper texture background. Square format, icon-like simplicity.`;
+  const defaultStyle = `A 2D Japanese flat illustration in ukiyo-e inspired style with clean bold outlines, flat color fills, and muted earth tones (indigo, vermillion, moss green, warm cream). No gradients, no 3D shading, no photorealism.`;
+  const customStyle = stmts.getSetting.get("image_style_prompt")?.value || "";
+  const styleInstruction = customStyle || defaultStyle;
+  const prompt = `${styleInstruction} The scene depicts ${typeVisual} representing the concept: "${title}"${areaLabel ? `, in the context of ${areaLabel}` : ""}. Minimal composition, negative space, subtle paper texture background. Square format, icon-like simplicity.`;
 
   const payload = JSON.stringify({
     model: "gpt-image-1",
@@ -421,12 +424,14 @@ const server = http.createServer(async (req, res) => {
       const openaiKeyRow = stmts.getSetting.get("openai_api_key");
       const hasApiKey = !!(apiKeyRow?.value);
       const hasOpenAIKey = !!(openaiKeyRow?.value);
+      const imageStyleRow = stmts.getSetting.get("image_style_prompt");
       sendJSON(res, 200, {
         theme: theme ? theme.value : "marshmallow",
         hasAnthropicKey: hasApiKey,
         anthropicKeyHint: hasApiKey ? "sk-ant-•••" + apiKeyRow.value.slice(-4) : "",
         hasOpenAIKey,
         openaiKeyHint: hasOpenAIKey ? "sk-•••" + openaiKeyRow.value.slice(-4) : "",
+        imageStylePrompt: imageStyleRow?.value || "",
       });
       return;
     }
@@ -446,6 +451,13 @@ const server = http.createServer(async (req, res) => {
           stmts.upsertSetting.run("openai_api_key", body.openai_api_key);
         } else {
           db.prepare("DELETE FROM settings WHERE key = 'openai_api_key'").run();
+        }
+      }
+      if (body.image_style_prompt !== undefined) {
+        if (body.image_style_prompt) {
+          stmts.upsertSetting.run("image_style_prompt", body.image_style_prompt);
+        } else {
+          db.prepare("DELETE FROM settings WHERE key = 'image_style_prompt'").run();
         }
       }
       sendJSON(res, 200, { ok: true });

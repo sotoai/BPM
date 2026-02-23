@@ -1081,28 +1081,6 @@ html, body {
 
 @keyframes spin { to { transform: rotate(360deg); } }
 
-.prompt-settings-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  border: 1px solid color-mix(in srgb, var(--border) 10%, transparent);
-  border-radius: 6px;
-  background: var(--panel2);
-  color: var(--muted);
-  font-size: 15px;
-  cursor: pointer;
-  transition: all 150ms;
-  flex-shrink: 0;
-}
-
-.prompt-settings-btn:hover {
-  color: var(--text);
-  border-color: var(--focus);
-  background: color-mix(in srgb, var(--focus) 8%, var(--panel2));
-}
-
 .prompt-provider-select,
 .prompt-model-select {
   padding: 5px 8px;
@@ -2079,6 +2057,7 @@ html, body {
         <option value="gringo">Gringo</option>
         <option value="matrix">Matrix</option>
       </select>
+      <button class="btn-icon" onclick="openAppSettings()" title="Settings" style="padding:6px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="16" height="16"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
     </div>
   </header>
 
@@ -3044,6 +3023,7 @@ let hasAnthropicKey = false;
 let anthropicKeyHint = "";
 let hasOpenAIKey = false;
 let openaiKeyHint = "";
+let imageStylePrompt = "";
 let selectedProvider = "anthropic";
 let selectedModel = "claude-sonnet-4-20250514";
 
@@ -3105,7 +3085,6 @@ function renderPromptLab() {
             ${["implement","fix","refactor","test","review"].map(p => `<button class="prompt-type-tab${promptType===p?" active":""}" onclick="setPromptType('${p}')">${p.charAt(0).toUpperCase()+p.slice(1)}</button>`).join("")}
           </div>
           <div style="flex:1"></div>
-          <button class="prompt-settings-btn" onclick="openPromptSettings()" title="API Key Settings">\u2699</button>
           <button class="btn btn-sm" onclick="copyText(lastGeneratedPrompt)" ${!lastGeneratedPrompt||promptIsLoading?"disabled":""}>Copy</button>
           <button class="btn btn-primary btn-sm" onclick="generateAIPrompt()" ${!selectedPromptTicket||promptIsLoading||!providerHasKey?"disabled":""}>
             ${promptIsLoading ? "Generating\u2026" : "Generate"}
@@ -3160,7 +3139,7 @@ function setModel(value) {
   selectedModel = value;
 }
 
-function openPromptSettings() {
+function openAppSettings() {
   const renderSettingsContent = () => {
     const anthropicSection = hasAnthropicKey
       ? `<div class="settings-modal-row">
@@ -3186,7 +3165,7 @@ function openPromptSettings() {
 
     return `
       <div class="modal-header">
-        <div class="modal-title">Prompt Lab Settings</div>
+        <div class="modal-title">Settings</div>
         <button class="modal-close" onclick="closeModal()">&times;</button>
       </div>
       <div class="modal-body">
@@ -3198,8 +3177,20 @@ function openPromptSettings() {
           <div class="settings-modal-label">OpenAI API Key</div>
           ${openaiSection}
         </div>
-        <div style="font-size:10px;color:var(--muted);margin-top:12px;line-height:1.5;">
-          API keys are stored securely on the server and never exposed to the browser. Only a masked hint is displayed.
+        <div style="font-size:10px;color:var(--muted);margin-top:4px;line-height:1.5;">
+          API keys are stored securely on the server and never exposed to the browser.
+        </div>
+        <hr style="border:none;border-top:1px solid color-mix(in srgb, var(--border) 10%, transparent);margin:16px 0;" />
+        <div class="settings-modal-section">
+          <div class="settings-modal-label">Image Generation Style</div>
+          <div style="font-size:10px;color:var(--muted);margin-bottom:6px;line-height:1.4;">
+            Customize the base style instruction for AI-generated ticket images. Leave blank to use the default Japanese flat illustration style.
+          </div>
+          <textarea id="image-style-input" class="textarea" rows="4" style="font-size:11px;resize:vertical;" placeholder="A 2D Japanese flat illustration in ukiyo-e inspired style with clean bold outlines, flat color fills, and muted earth tones...">${esc(imageStylePrompt)}</textarea>
+          <div style="display:flex;gap:6px;margin-top:6px;">
+            <button class="btn btn-primary btn-sm" onclick="saveImageStylePrompt()" style="font-size:10px;padding:3px 10px">Save Style</button>
+            <button class="btn btn-sm" onclick="clearImageStylePrompt()" style="font-size:10px;padding:3px 8px">Reset to Default</button>
+          </div>
         </div>
       </div>
     `;
@@ -3248,6 +3239,21 @@ function clearProviderKey(provider) {
   showToast(`${PROVIDERS[provider].label} API key removed`);
   if (window._refreshSettingsModal) window._refreshSettingsModal();
   renderPromptLab();
+}
+
+function saveImageStylePrompt() {
+  const val = document.getElementById("image-style-input")?.value?.trim() || "";
+  imageStylePrompt = val;
+  saveSettings({ image_style_prompt: val });
+  showToast("Image style prompt saved");
+  if (window._refreshSettingsModal) window._refreshSettingsModal();
+}
+
+function clearImageStylePrompt() {
+  imageStylePrompt = "";
+  saveSettings({ image_style_prompt: "" });
+  showToast("Image style reset to default");
+  if (window._refreshSettingsModal) window._refreshSettingsModal();
 }
 
 async function generateAIPrompt() {
@@ -4196,6 +4202,7 @@ function initTrackerTilt() {
   anthropicKeyHint = settings.anthropicKeyHint || "";
   hasOpenAIKey = settings.hasOpenAIKey || false;
   openaiKeyHint = settings.openaiKeyHint || "";
+  imageStylePrompt = settings.imageStylePrompt || "";
 
   // Initial render
   renderDashboard();

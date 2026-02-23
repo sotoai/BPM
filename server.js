@@ -17,10 +17,12 @@
  *   GET  /api/activity         - List recent activity
  *   GET  /api/settings         - Read settings
  *   PUT  /api/settings         - Write settings
+ *   POST /api/ai/prompt        - Generate AI prompt via Anthropic Claude
  *   GET  /health               - Health check
  */
 
 import http from "http";
+import https from "https";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -311,14 +313,82 @@ const server = http.createServer(async (req, res) => {
     // --- Settings ---
     if (pathname === "/api/settings" && req.method === "GET") {
       const theme = stmts.getSetting.get("theme");
-      sendJSON(res, 200, { theme: theme ? theme.value : "marshmallow" });
+      const apiKeyRow = stmts.getSetting.get("anthropic_api_key");
+      const hasApiKey = !!(apiKeyRow?.value);
+      sendJSON(res, 200, {
+        theme: theme ? theme.value : "marshmallow",
+        hasAnthropicKey: hasApiKey,
+        anthropicKeyHint: hasApiKey ? "sk-ant-•••" + apiKeyRow.value.slice(-4) : "",
+      });
       return;
     }
 
     if (pathname === "/api/settings" && req.method === "PUT") {
       const body = await parseBody(req);
       if (body.theme) stmts.upsertSetting.run("theme", body.theme);
+      if (body.anthropic_api_key !== undefined) {
+        if (body.anthropic_api_key) {
+          stmts.upsertSetting.run("anthropic_api_key", body.anthropic_api_key);
+        } else {
+          db.prepare("DELETE FROM settings WHERE key = 'anthropic_api_key'").run();
+        }
+      }
       sendJSON(res, 200, { ok: true });
+      return;
+    }
+
+    // --- AI Prompt Generation (proxy to Anthropic) ---
+    if (pathname === "/api/ai/prompt" && req.method === "POST") {
+      const body = await parseBody(req);
+      const apiKey = body.apiKey || (stmts.getSetting.get("anthropic_api_key")?.value);
+      if (!apiKey) {
+        sendJSON(res, 400, { error: "No Anthropic API key configured. Add one in the Prompt Lab settings." });
+        return;
+      }
+
+      const payload = JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 1024,
+        system: body.system || "",
+        messages: body.messages || [],
+      });
+
+      const result = await new Promise((resolve, reject) => {
+        const apiReq = https.request({
+          hostname: "api.anthropic.com",
+          path: "/v1/messages",
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-api-key": apiKey,
+            "anthropic-version": "2023-06-01",
+          },
+        }, (apiRes) => {
+          let data = "";
+          apiRes.on("data", (chunk) => { data += chunk; });
+          apiRes.on("end", () => {
+            try {
+              const parsed = JSON.parse(data);
+              if (apiRes.statusCode >= 400) {
+                resolve({ error: parsed.error?.message || `API error ${apiRes.statusCode}`, status: apiRes.statusCode });
+              } else {
+                resolve({ ok: true, content: parsed.content?.[0]?.text || "", usage: parsed.usage });
+              }
+            } catch (e) {
+              resolve({ error: "Failed to parse API response" });
+            }
+          });
+        });
+        apiReq.on("error", (e) => resolve({ error: e.message }));
+        apiReq.write(payload);
+        apiReq.end();
+      });
+
+      if (result.error) {
+        sendJSON(res, result.status || 500, { error: result.error });
+      } else {
+        sendJSON(res, 200, result);
+      }
       return;
     }
 

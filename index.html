@@ -769,6 +769,73 @@ html, body {
 .context-chip:hover { background: color-mix(in srgb, var(--focus) 18%, transparent); }
 .context-chip.active { background: var(--focus); color: var(--accentText); }
 
+/* --- AI Loading State --- */
+.prompt-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 40px 20px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.prompt-loading .spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid color-mix(in srgb, var(--focus) 20%, transparent);
+  border-top-color: var(--focus);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.prompt-api-key-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: color-mix(in srgb, var(--text) 3%, transparent);
+  border-radius: 8px;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.prompt-api-key-bar input {
+  flex: 1;
+  min-width: 0;
+  padding: 5px 8px;
+  font-size: 11px;
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  color: var(--text);
+  background: var(--panel2);
+  border: 1px solid color-mix(in srgb, var(--border) 10%, transparent);
+  border-radius: 4px;
+  outline: none;
+}
+
+.prompt-api-key-bar input:focus { border-color: var(--focus); }
+
+.prompt-ai-output {
+  flex: 1;
+  background: var(--panel2);
+  border: 1px solid color-mix(in srgb, var(--border) 8%, transparent);
+  border-radius: 10px;
+  padding: 20px;
+  overflow-y: auto;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--text);
+}
+
+.prompt-ai-output h3 { font-size: 13px; font-weight: 600; margin: 16px 0 6px; color: var(--text); }
+.prompt-ai-output h3:first-child { margin-top: 0; }
+.prompt-ai-output p { margin: 0 0 10px; }
+.prompt-ai-output ul, .prompt-ai-output ol { margin: 0 0 10px; padding-left: 20px; }
+.prompt-ai-output li { margin-bottom: 4px; }
+.prompt-ai-output strong { color: var(--text); }
+
 /* --- Knowledge Base --- */
 .kb-layout {
   display: grid;
@@ -2443,19 +2510,38 @@ function openTicketDetail(id) {
 
 // === PROMPT LAB ===
 let selectedPromptTicket = null;
-let promptType = "fix";
+let promptType = "implement";
 let lastGeneratedPrompt = "";
+let promptIsLoading = false;
+let hasAnthropicKey = false;
+let anthropicKeyHint = "";
 
 function renderPromptLab() {
   const openTickets = DATA.tickets.filter(t => t.status !== "done");
+  const selectedTicket = selectedPromptTicket ? DATA.tickets.find(t => t.id === selectedPromptTicket) : null;
+
+  const outputContent = promptIsLoading
+    ? '<div class="prompt-loading"><div class="spinner"></div>Generating prompt with Claude\u2026</div>'
+    : lastGeneratedPrompt
+      ? simpleMarkdownToHtml(lastGeneratedPrompt)
+      : '<span class="prompt-output-empty">Select a ticket to generate an AI-powered prompt for Claude Code.</span>';
 
   document.getElementById("page-prompts").innerHTML = `
     <div class="page-title">Prompt Lab</div>
-    <div class="page-subtitle">Generate Claude Code prompts from tickets or create custom prompts</div>
+    <div class="page-subtitle">AI-powered prompts for Claude Code — informed by your Knowledge Base</div>
+
+    <div class="prompt-api-key-bar">
+      <span style="flex-shrink:0">\ud83d\udd11 Anthropic API Key:</span>
+      ${hasAnthropicKey
+        ? `<span style="font-family:monospace;letter-spacing:0.05em">${esc(anthropicKeyHint)}</span>
+           <button class="btn btn-sm" onclick="clearAnthropicKey()" style="font-size:10px;padding:3px 8px">Remove</button>`
+        : `<input type="password" id="api-key-input" placeholder="sk-ant-api03-..." />
+           <button class="btn btn-primary btn-sm" onclick="saveAnthropicKey()" style="font-size:10px;padding:3px 10px">Save</button>`}
+    </div>
 
     <div class="prompt-layout">
       <div class="prompt-sidebar">
-        <div class="section-title">Select a ticket</div>
+        <div class="section-title">Open Tickets</div>
         ${openTickets.length === 0 ? '<div class="empty-state"><div class="empty-state-sub">No open tickets. Create one in the Tracker.</div></div>' :
           openTickets.map(t => `
             <div class="prompt-ticket-card${selectedPromptTicket === t.id ? " selected" : ""}" onclick="selectPromptTicket('${t.id}')">
@@ -2473,42 +2559,107 @@ function renderPromptLab() {
       <div class="prompt-main">
         <div class="prompt-controls">
           <div class="prompt-type-tabs">
-            ${["fix","implement","refactor","test","review"].map(p => `<button class="prompt-type-tab${promptType===p?" active":""}" onclick="setPromptType('${p}')">${p.charAt(0).toUpperCase()+p.slice(1)}</button>`).join("")}
+            ${["implement","fix","refactor","test","review"].map(p => `<button class="prompt-type-tab${promptType===p?" active":""}" onclick="setPromptType('${p}')">${p.charAt(0).toUpperCase()+p.slice(1)}</button>`).join("")}
           </div>
           <div style="flex:1"></div>
-          <button class="btn btn-sm" onclick="copyText(lastGeneratedPrompt)" ${!lastGeneratedPrompt?"disabled":""}>Copy</button>
-          <button class="btn btn-primary btn-sm" onclick="generateCurrentPrompt()">Generate</button>
+          <button class="btn btn-sm" onclick="copyText(lastGeneratedPrompt)" ${!lastGeneratedPrompt||promptIsLoading?"disabled":""}>Copy</button>
+          <button class="btn btn-primary btn-sm" onclick="generateAIPrompt()" ${!selectedPromptTicket||promptIsLoading||!hasAnthropicKey?"disabled":""}>
+            ${promptIsLoading ? "Generating\u2026" : "Generate with AI"}
+          </button>
         </div>
 
-        <div class="prompt-output" id="prompt-output">
-          ${lastGeneratedPrompt ? esc(lastGeneratedPrompt) : '<span class="prompt-output-empty">Select a ticket and click Generate, or choose a prompt type to create a custom prompt.</span>'}
+        <div class="prompt-ai-output" id="prompt-output">
+          ${outputContent}
         </div>
       </div>
     </div>
   `;
 }
 
+function simpleMarkdownToHtml(md) {
+  return md
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/^### (.+)$/gm, "<h3>$1</h3>")
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/^\- (.+)$/gm, "<li>$1</li>")
+    .replace(/^\d+\. (.+)$/gm, "<li>$1</li>")
+    .replace(/(<li>.*<\/li>\n?)+/g, (m) => "<ul>" + m + "</ul>")
+    .replace(/\n{2,}/g, "</p><p>")
+    .replace(/\n/g, "<br>")
+    .replace(/^/, "<p>").replace(/$/, "</p>")
+    .replace(/<p><h3>/g, "<h3>").replace(/<\/h3><\/p>/g, "</h3>")
+    .replace(/<p><ul>/g, "<ul>").replace(/<\/ul><\/p>/g, "</ul>")
+    .replace(/<p><\/p>/g, "");
+}
+
 function selectPromptTicket(id) {
   selectedPromptTicket = selectedPromptTicket === id ? null : id;
+  lastGeneratedPrompt = "";
   renderPromptLab();
 }
 
 function setPromptType(type) {
   promptType = type;
+  lastGeneratedPrompt = "";
   renderPromptLab();
 }
 
-function generateCurrentPrompt() {
+function saveAnthropicKey() {
+  const input = document.getElementById("api-key-input");
+  const key = input?.value?.trim();
+  if (!key) return;
+  saveSettings({ anthropic_api_key: key });
+  hasAnthropicKey = true;
+  anthropicKeyHint = "sk-ant-\u2022\u2022\u2022" + key.slice(-4);
+  renderPromptLab();
+  showToast("API key saved");
+}
+
+function clearAnthropicKey() {
+  saveSettings({ anthropic_api_key: "" });
+  hasAnthropicKey = false;
+  anthropicKeyHint = "";
+  renderPromptLab();
+  showToast("API key removed");
+}
+
+async function generateAIPrompt() {
   const ticket = selectedPromptTicket ? DATA.tickets.find(t => t.id === selectedPromptTicket) : null;
-  lastGeneratedPrompt = buildPrompt(ticket, promptType);
-  const act = { action: "prompt", ticketId: ticket?.id || null, title: `Generated ${promptType} prompt${ticket ? ": " + ticket.title : ""}`, time: now() };
-  addActivity(act.action, act.ticketId, act.title);
-  // Prompt generation only creates activity — persist it via a no-op ticket update if ticket exists, otherwise bulk sync
-  if (ticket) {
+  if (!ticket || !hasAnthropicKey) return;
+
+  promptIsLoading = true;
+  lastGeneratedPrompt = "";
+  renderPromptLab();
+
+  const systemPrompt = buildAISystemPrompt();
+  const userMessage = buildAIUserMessage(ticket, promptType);
+
+  try {
+    const res = await fetch(`${API_BASE}/api/ai/prompt`, {
+      method: "POST",
+      headers: JSON_HEADERS,
+      body: JSON.stringify({
+        system: systemPrompt,
+        messages: [{ role: "user", content: userMessage }],
+      }),
+    });
+    const data = await res.json();
+
+    if (data.error) {
+      lastGeneratedPrompt = "Error: " + data.error;
+    } else {
+      lastGeneratedPrompt = data.content || "No response generated.";
+    }
+
+    // Log activity
+    const act = { action: "prompt", ticketId: ticket.id, title: `AI ${promptType} prompt: ${ticket.title}`, time: now() };
+    addActivity(act.action, act.ticketId, act.title);
     apiUpdateTicket(ticket.id, { updatedAt: ticket.updatedAt }, act);
-  } else {
-    saveData(DATA);
+  } catch (err) {
+    lastGeneratedPrompt = "Error: " + err.message;
   }
+
+  promptIsLoading = false;
   renderPromptLab();
 }
 
@@ -2516,15 +2667,64 @@ function generatePromptForTicket(id) {
   selectedPromptTicket = id;
   const t = DATA.tickets.find(x => x.id === id);
   promptType = t?.type === "bug" ? "fix" : "implement";
-  lastGeneratedPrompt = buildPrompt(t, promptType);
-  const act = { action: "prompt", ticketId: id, title: `Generated ${promptType} prompt: ${t?.title || id}`, time: now() };
-  addActivity(act.action, act.ticketId, act.title);
-  if (t) apiUpdateTicket(t.id, { updatedAt: t.updatedAt }, act);
+  lastGeneratedPrompt = "";
   // Switch to prompt lab
   currentPage = "prompts";
   document.querySelectorAll(".shell-nav-btn").forEach(b => b.classList.toggle("active", b.dataset.page === "prompts"));
   document.querySelectorAll(".page").forEach(p => p.classList.toggle("active", p.id === "page-prompts"));
   renderPromptLab();
+}
+
+function buildAISystemPrompt() {
+  return `You are a prompt engineer for BPM (BentoBase Performance Manager). Your job is to write clear, actionable prompts that a developer would give to Claude Code to implement work on the BentoBase platform.
+
+BentoBase is a sovereignty-first AI flow editor — a vanilla JavaScript single-page application where users build AI workflows by connecting nodes on a canvas, define intelligent agents, and manage data locally.
+
+Key platform context:
+- No frameworks (vanilla JS, ES modules, no React/Vue)
+- Unidirectional state store (dispatch/reduce pattern)
+- CSS custom properties for theming (6 themes)
+- Local-first: all data persists to local JSON files
+- Electron-ready for desktop packaging
+- Layered architecture: UI > Canvas > State > Graph > Runtime > Storage > API
+
+IMPORTANT RULES FOR YOUR PROMPTS:
+- Describe DESIRED FUNCTIONALITY and BEHAVIOR, not specific files or code implementations
+- Focus on what the user experience should be, not how to code it
+- Reference the platform's design principles (sovereignty, no frameworks, local-first)
+- Be specific about expected behavior, edge cases, and user interactions
+- Never suggest specific file paths, function names, or code snippets
+- Never recommend third-party libraries or dependencies
+- Frame everything in terms of what the feature should DO, not how to BUILD it
+- Keep prompts concise but thorough — a developer should understand exactly what to build`;
+}
+
+function buildAIUserMessage(ticket, type) {
+  const parts = [];
+  parts.push(`Generate a ${type} prompt for Claude Code based on this ticket:\n`);
+  parts.push(`Title: ${ticket.title}`);
+  parts.push(`Type: ${ticket.type} | Priority: ${ticket.priority} | Status: ${ticket.status}`);
+  if (ticket.area) parts.push(`Area: ${getAreaLabel(ticket.area)}${ticket.subarea ? " > " + ticket.subarea : ""}`);
+  if (ticket.description) parts.push(`\nDescription:\n${ticket.description}`);
+
+  // Add KB context for the area
+  const kbCtx = getKBContextForArea(ticket.area);
+  if (kbCtx) {
+    parts.push(`\nKnowledge Base context for this area:\n${kbCtx}`);
+  }
+
+  // Add prompt type guidance
+  const typeGuidance = {
+    implement: "Write a prompt that describes the feature to implement. Focus on user-facing behavior, interactions, and expected outcomes.",
+    fix: "Write a prompt that describes the bug to fix. Focus on the incorrect behavior, what the correct behavior should be, and any user-visible impact.",
+    refactor: "Write a prompt that describes what to refactor and why. Focus on the desired improvements to code quality, performance, or maintainability without changing behavior.",
+    test: "Write a prompt that describes what to test. Focus on scenarios, edge cases, expected outcomes, and acceptance criteria.",
+    review: "Write a prompt that asks for a review of this area. Focus on correctness, security, performance, and adherence to platform conventions.",
+  };
+  parts.push(`\nPrompt type: ${type}`);
+  parts.push(typeGuidance[type] || typeGuidance.implement);
+
+  return parts.join("\n");
 }
 
 function getKBContextForArea(area) {
@@ -2545,125 +2745,6 @@ function getKBContextForArea(area) {
     portal:     "Dev Dashboard (BPM): Separate self-contained portal for project management. SQLite-backed API server, ticket tracking, prompt generation, knowledge base, kanban roadmap. Fully independent from the BentoBase app \u2014 no shared code, imports, or data.",
   };
   return ctx[area] || "";
-}
-
-function buildPrompt(ticket, type) {
-  const lines = [];
-  const divider = "---";
-
-  if (ticket) {
-    lines.push(`# ${type.charAt(0).toUpperCase() + type.slice(1)}: ${ticket.title}`);
-    lines.push("");
-    lines.push(`**Ticket:** ${ticket.id}`);
-    lines.push(`**Type:** ${ticket.type} | **Priority:** ${ticket.priority} | **Status:** ${ticket.status}`);
-    if (ticket.area) lines.push(`**Area:** ${getAreaLabel(ticket.area)}${ticket.subarea ? ` \u203A ${ticket.subarea}` : ""}`);
-    if (ticket.assignee) lines.push(`**Assignee:** ${ticket.assignee}`);
-    lines.push("");
-
-    if (ticket.description) {
-      lines.push("## Context");
-      lines.push("");
-      lines.push(ticket.description);
-      lines.push("");
-    }
-
-    if (ticket.files) {
-      lines.push("## Files to Modify");
-      lines.push("");
-      ticket.files.split(",").map(f => f.trim()).filter(Boolean).forEach(f => {
-        lines.push(`- \`${f}\``);
-      });
-      lines.push("");
-    }
-
-    const kbCtx = getKBContextForArea(ticket.area);
-    if (kbCtx) {
-      lines.push("## Area Context (from Knowledge Base)");
-      lines.push("");
-      lines.push(kbCtx);
-      lines.push("");
-    }
-
-    lines.push(divider);
-    lines.push("");
-  }
-
-  // Prompt body based on type
-  switch (type) {
-    case "fix":
-      lines.push("## Instructions");
-      lines.push("");
-      lines.push(`${ticket ? "Fix the bug described above." : "Fix the following bug:"}`);
-      lines.push("");
-      lines.push("1. Read the relevant files to understand the current behavior");
-      lines.push("2. Identify the root cause of the issue");
-      lines.push("3. Implement the minimal fix that resolves the problem");
-      lines.push("4. Do not refactor unrelated code or add features beyond the fix");
-      lines.push("5. Preserve existing patterns and conventions in the codebase");
-      if (ticket?.files) {
-        lines.push("");
-        lines.push(`Start by reading: ${ticket.files.split(",")[0].trim()}`);
-      }
-      break;
-
-    case "implement":
-      lines.push("## Instructions");
-      lines.push("");
-      lines.push(`${ticket ? "Implement the feature described above." : "Implement the following feature:"}`);
-      lines.push("");
-      lines.push("1. Study the existing codebase patterns before writing any code");
-      lines.push("2. Follow the project's naming conventions and file organization");
-      lines.push("3. Keep the implementation minimal and focused on the requirements");
-      lines.push("4. Mirror existing UI patterns (see app.css for component styles)");
-      lines.push("5. Wire up any state management through the existing store/dispatch pattern");
-      break;
-
-    case "refactor":
-      lines.push("## Instructions");
-      lines.push("");
-      lines.push(`${ticket ? "Refactor the code described above." : "Refactor the following code:"}`);
-      lines.push("");
-      lines.push("1. Read the current implementation thoroughly");
-      lines.push("2. Identify the specific improvements needed");
-      lines.push("3. Preserve all existing behavior \u2014 this is a refactor, not a feature change");
-      lines.push("4. Keep changes minimal and reviewable");
-      lines.push("5. Do not change public APIs or data structures unless necessary");
-      break;
-
-    case "test":
-      lines.push("## Instructions");
-      lines.push("");
-      lines.push(`${ticket ? "Write a test plan for the feature described above." : "Write a test plan for the following:"}`);
-      lines.push("");
-      lines.push("Provide:");
-      lines.push("1. Manual test steps that verify the feature works correctly");
-      lines.push("2. Edge cases and boundary conditions to check");
-      lines.push("3. Regression risks \u2014 what existing features could break");
-      lines.push("4. A checklist format suitable for the validation team");
-      break;
-
-    case "review":
-      lines.push("## Instructions");
-      lines.push("");
-      lines.push(`${ticket ? "Review the implementation of the feature described above." : "Review the following implementation:"}`);
-      lines.push("");
-      lines.push("Check for:");
-      lines.push("1. Correctness \u2014 does it do what the ticket describes?");
-      lines.push("2. Security \u2014 any injection, XSS, or data exposure risks?");
-      lines.push("3. Performance \u2014 unnecessary re-renders, large DOM updates, memory leaks?");
-      lines.push("4. Consistency \u2014 does it follow the project\u2019s patterns?");
-      lines.push("5. Edge cases \u2014 empty states, error states, missing data?");
-      break;
-  }
-
-  lines.push("");
-  lines.push(divider);
-  lines.push("");
-  lines.push("**Project:** BentoBase (tracked via BPM)");
-  lines.push("**Stack:** Vanilla JS, custom state store (dispatch/reduce), file-backed JSON persistence, CSS custom properties theming");
-  lines.push("**Working Directory:** /Users/joshuasoto/Dropbox/Bento_Canvas/Bento_Canvas");
-
-  return lines.join("\n");
 }
 
 // === KNOWLEDGE BASE ===
@@ -3334,10 +3415,12 @@ function initRoadmapTilt() {
   // Load data from server
   DATA = await loadDataFromServer();
 
-  // Load and apply theme
+  // Load and apply settings
   const settings = await loadSettingsFromServer();
   document.documentElement.setAttribute("data-theme", settings.theme || "marshmallow");
   themeSelect.value = settings.theme || "marshmallow";
+  hasAnthropicKey = settings.hasAnthropicKey || false;
+  anthropicKeyHint = settings.anthropicKeyHint || "";
 
   // Initial render
   renderDashboard();

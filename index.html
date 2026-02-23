@@ -1,0 +1,2710 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="marshmallow">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>BentoBase — Project Portal</title>
+<style>
+/* ========================================
+   BentoBase Project Portal — Design System
+   ======================================== */
+
+/* --- Theme Tokens --- */
+:root {
+  --bg: #f7f7f7;
+  --panel: #efefef;
+  --panel2: #ffffff;
+  --text: #141414;
+  --muted: #4a4a4a;
+  --border: #141414;
+  --focus: #7c5b45;
+  --accentBg: #5b4133;
+  --accentText: #f7f7f7;
+  --icon-filter: none;
+  --runPassed: #6b8f71;
+  --runFailed: #b87070;
+  --runRunning: #c4a26e;
+}
+
+html[data-theme="mocha"] {
+  --bg: #1b1613; --panel: #2b231e; --panel2: #362b25;
+  --text: #f3ece6; --muted: #c7b7ad; --border: #f3ece6;
+  --focus: #e2b88f; --accentBg: #e2b88f; --accentText: #1b1613;
+  --icon-filter: invert(1);
+  --runPassed: #7fa97e; --runFailed: #c47676; --runRunning: #dbb870;
+}
+
+html[data-theme="disco"] {
+  --bg: #120b1f; --panel: #1a1030; --panel2: #231246;
+  --text: #f6f3ff; --muted: #c6b8ff; --border: #f6f3ff;
+  --focus: #00f5ff; --accentBg: #ff3df4; --accentText: #120b1f;
+  --icon-filter: invert(1);
+  --runPassed: #7dffb0; --runFailed: #ff7a7a; --runRunning: #ffcc00;
+}
+
+html[data-theme="ronswanson"] {
+  --bg: #0f1620; --panel: #1a2533; --panel2: #223142;
+  --text: #f2f7fb; --muted: #b9c9d6; --border: #f2f7fb;
+  --focus: #f6c177; --accentBg: #f6c177; --accentText: #0f1620;
+  --icon-filter: invert(1);
+  --runPassed: #7fa97e; --runFailed: #c47676; --runRunning: #e6b45e;
+}
+
+html[data-theme="gringo"] {
+  --bg: #f3e8d9; --panel: #f8f1e7; --panel2: #ffffff;
+  --text: #1d1a16; --muted: #5b5148; --border: #1d1a16;
+  --focus: #0a8f6a; --accentBg: #d3f0e6; --accentText: #1d1a16;
+  --icon-filter: none;
+  --runPassed: #2e7d32; --runFailed: #b44; --runRunning: #c49000;
+}
+
+html[data-theme="matrix"] {
+  --bg: #050b06; --panel: #07140b; --panel2: #0b1f12;
+  --text: #00ff66; --muted: #7dffb0; --border: #00c650;
+  --focus: #00ff66; --accentBg: #00c650; --accentText: #050b06;
+  --icon-filter: invert(1);
+  --runPassed: #00ff66; --runFailed: #ff4444; --runRunning: #ffcc00;
+}
+
+/* --- Reset & Base --- */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 14px;
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--focus) 30%, transparent);
+}
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--muted) 30%, transparent);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--muted) 50%, transparent);
+}
+
+/* --- Shell Layout --- */
+.shell {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.shell-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 44px;
+  padding: 0 16px;
+  background: var(--panel);
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 12%, transparent);
+  box-sizing: border-box;
+  flex-shrink: 0;
+  z-index: 100;
+}
+
+.shell-header-left {
+  display: flex;
+  align-items: center;
+}
+
+.shell-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.shell-logo {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  color: var(--muted);
+  cursor: default;
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+
+.shell-logo svg {
+  width: 18px;
+  height: 18px;
+}
+
+.shell-nav {
+  display: flex;
+  gap: 0;
+}
+
+.shell-nav-btn {
+  padding: 0 14px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  background: none;
+  border: none;
+  border-bottom: 1.5px solid transparent;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color 150ms ease, border-color 150ms ease;
+}
+
+.shell-nav-btn:hover {
+  color: var(--text);
+}
+
+.shell-nav-btn.active {
+  color: var(--text);
+  font-weight: 600;
+  border-bottom-color: var(--focus);
+}
+
+
+.theme-select {
+  font-size: 11px;
+  padding: 4px 8px;
+  border: 1px solid color-mix(in srgb, var(--border) 15%, transparent);
+  border-radius: 6px;
+  background: var(--panel2);
+  color: var(--text);
+  cursor: pointer;
+  outline: none;
+}
+
+.theme-select:focus { border-color: var(--focus); }
+
+/* --- Main Content --- */
+.main-content {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+}
+
+.page {
+  display: none;
+  flex: 1;
+  overflow-y: auto;
+  padding: 28px 32px;
+}
+
+.page.active { display: block; }
+
+.page-title {
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin-bottom: 4px;
+}
+
+.page-subtitle {
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 24px;
+}
+
+/* --- Buttons --- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text);
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--border) 18%, transparent);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 150ms ease;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.btn:hover {
+  background: color-mix(in srgb, var(--text) 5%, transparent);
+  border-color: color-mix(in srgb, var(--border) 30%, transparent);
+}
+
+.btn-primary {
+  background: color-mix(in srgb, var(--focus) 12%, transparent);
+  color: var(--focus);
+  border-color: color-mix(in srgb, var(--focus) 25%, transparent);
+}
+
+.btn-primary:hover {
+  background: color-mix(in srgb, var(--focus) 20%, transparent);
+  border-color: color-mix(in srgb, var(--focus) 40%, transparent);
+}
+
+.btn-accent {
+  background: var(--accentBg);
+  color: var(--accentText);
+  border-color: transparent;
+}
+
+.btn-accent:hover { opacity: 0.9; }
+
+.btn-danger {
+  color: #e55;
+  border-color: color-mix(in srgb, #e55 25%, transparent);
+}
+
+.btn-danger:hover {
+  background: color-mix(in srgb, #e55 10%, transparent);
+}
+
+.btn-sm {
+  padding: 4px 10px;
+  font-size: 11px;
+}
+
+.btn-icon {
+  padding: 5px;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 150ms ease;
+}
+
+.btn-icon:hover {
+  color: var(--text);
+  background: color-mix(in srgb, var(--text) 6%, transparent);
+}
+
+.btn-icon svg { width: 16px; height: 16px; }
+
+/* --- Cards --- */
+.card {
+  background: var(--panel2);
+  border: 1px solid color-mix(in srgb, var(--border) 8%, transparent);
+  border-radius: 10px;
+  padding: 20px;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.card:hover {
+  border-color: color-mix(in srgb, var(--border) 15%, transparent);
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.card-title {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+/* --- Badges --- */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.badge-bug { background: color-mix(in srgb, #e55 15%, transparent); color: #e55; }
+.badge-feature { background: color-mix(in srgb, var(--focus) 15%, transparent); color: var(--focus); }
+.badge-enhancement { background: color-mix(in srgb, #8b5cf6 15%, transparent); color: #8b5cf6; }
+.badge-refactor { background: color-mix(in srgb, #6b7a8d 15%, transparent); color: #6b7a8d; }
+.badge-docs { background: color-mix(in srgb, #0a8f6a 15%, transparent); color: #0a8f6a; }
+
+.badge-critical { background: color-mix(in srgb, #dc2626 15%, transparent); color: #dc2626; }
+.badge-high { background: color-mix(in srgb, #ea580c 15%, transparent); color: #ea580c; }
+.badge-medium { background: color-mix(in srgb, var(--runRunning) 15%, transparent); color: var(--runRunning); }
+.badge-low { background: color-mix(in srgb, var(--muted) 15%, transparent); color: var(--muted); }
+
+.badge-open { background: color-mix(in srgb, #3b82f6 15%, transparent); color: #3b82f6; }
+.badge-progress { background: color-mix(in srgb, var(--runRunning) 15%, transparent); color: var(--runRunning); }
+.badge-review { background: color-mix(in srgb, #8b5cf6 15%, transparent); color: #8b5cf6; }
+.badge-done { background: color-mix(in srgb, var(--runPassed) 15%, transparent); color: var(--runPassed); }
+
+/* --- Inputs --- */
+.input, .textarea, .select {
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--text);
+  background: color-mix(in srgb, var(--text) 3%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border) 10%, transparent);
+  border-radius: 6px;
+  outline: none;
+  transition: border-color 150ms ease;
+}
+
+.input:focus, .textarea:focus, .select:focus {
+  border-color: var(--focus);
+}
+
+.input::placeholder, .textarea::placeholder {
+  color: var(--muted);
+  opacity: 0.5;
+}
+
+.textarea {
+  resize: vertical;
+  min-height: 80px;
+  line-height: 1.5;
+}
+
+.select {
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7a8d' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 28px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.form-label {
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.form-row {
+  display: flex;
+  gap: 12px;
+}
+
+.form-row > * { flex: 1; }
+
+/* --- Modal --- */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  z-index: 10000;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-overlay.open { display: flex; }
+
+.modal {
+  background: var(--panel);
+  border: 1px solid color-mix(in srgb, var(--border) 12%, transparent);
+  border-radius: 14px;
+  width: 560px;
+  max-width: 92vw;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.35);
+  animation: modalIn 200ms ease;
+}
+
+@keyframes modalIn {
+  from { opacity: 0; transform: scale(0.96) translateY(8px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 22px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 8%, transparent);
+}
+
+.modal-title {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.modal-body {
+  padding: 22px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 14px 22px;
+  border-top: 1px solid color-mix(in srgb, var(--border) 8%, transparent);
+}
+
+/* --- Dashboard --- */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: 28px;
+}
+
+.stat-card {
+  background: var(--panel2);
+  border: 1px solid color-mix(in srgb, var(--border) 8%, transparent);
+  border-radius: 10px;
+  padding: 18px 20px;
+}
+
+.stat-label {
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.stat-value {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+.stat-sub {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.section-title {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+
+/* --- Tracker --- */
+.tracker-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.tracker-search {
+  flex: 1;
+  min-width: 200px;
+  padding: 7px 12px;
+  font-size: 12px;
+  color: var(--text);
+  background: color-mix(in srgb, var(--text) 3%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border) 10%, transparent);
+  border-radius: 6px;
+  outline: none;
+  transition: border-color 150ms ease;
+  font-family: inherit;
+}
+
+.tracker-search:focus { border-color: var(--focus); }
+.tracker-search::placeholder { color: var(--muted); opacity: 0.5; }
+
+.tracker-filter {
+  padding: 6px 10px;
+  font-size: 11px;
+  color: var(--text);
+  background: var(--panel2);
+  border: 1px solid color-mix(in srgb, var(--border) 12%, transparent);
+  border-radius: 6px;
+  cursor: pointer;
+  outline: none;
+  font-family: inherit;
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%236b7a8d' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  padding-right: 24px;
+}
+
+.tracker-filter:focus { border-color: var(--focus); }
+
+.ticket-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ticket-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--panel2);
+  border: 1px solid color-mix(in srgb, var(--border) 6%, transparent);
+  border-radius: 8px;
+  transition: all 150ms ease;
+  cursor: pointer;
+}
+
+.ticket-row:hover {
+  border-color: color-mix(in srgb, var(--border) 15%, transparent);
+  background: color-mix(in srgb, var(--focus) 3%, transparent);
+}
+
+.ticket-row.done-row {
+  opacity: 0.5;
+}
+
+.ticket-row.done-row .ticket-title {
+  text-decoration: line-through;
+}
+
+.ticket-drag {
+  color: var(--muted);
+  opacity: 0.3;
+  cursor: grab;
+  flex-shrink: 0;
+}
+
+.ticket-drag:active { cursor: grabbing; }
+
+.ticket-priority {
+  width: 4px;
+  height: 28px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.ticket-priority.p-critical { background: #dc2626; }
+.ticket-priority.p-high { background: #ea580c; }
+.ticket-priority.p-medium { background: var(--runRunning); }
+.ticket-priority.p-low { background: color-mix(in srgb, var(--muted) 40%, transparent); }
+
+.ticket-body { flex: 1; min-width: 0; }
+
+.ticket-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ticket-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 3px;
+}
+
+.ticket-id {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--muted);
+  opacity: 0.6;
+  font-family: ui-monospace, SFMono-Regular, monospace;
+}
+
+.ticket-tags {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.ticket-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 150ms ease;
+}
+
+.ticket-row:hover .ticket-actions { opacity: 1; }
+
+/* --- Prompt Lab --- */
+.prompt-layout {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  gap: 20px;
+  height: calc(100vh - 140px);
+}
+
+.prompt-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+}
+
+.prompt-ticket-card {
+  padding: 12px;
+  border: 1px solid color-mix(in srgb, var(--border) 8%, transparent);
+  border-radius: 8px;
+  background: var(--panel2);
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+
+.prompt-ticket-card:hover {
+  border-color: color-mix(in srgb, var(--focus) 30%, transparent);
+}
+
+.prompt-ticket-card.selected {
+  border-color: var(--focus);
+  background: color-mix(in srgb, var(--focus) 5%, transparent);
+}
+
+.prompt-ticket-name {
+  font-size: 12px;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.prompt-ticket-desc {
+  font-size: 11px;
+  color: var(--muted);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.prompt-main {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.prompt-output {
+  flex: 1;
+  background: var(--panel2);
+  border: 1px solid color-mix(in srgb, var(--border) 8%, transparent);
+  border-radius: 10px;
+  padding: 20px;
+  overflow-y: auto;
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  font-size: 12px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  color: var(--text);
+  position: relative;
+}
+
+.prompt-output-empty {
+  color: var(--muted);
+  opacity: 0.5;
+  font-family: inherit;
+  font-style: italic;
+}
+
+.prompt-controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.prompt-context-chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  flex: 1;
+}
+
+.context-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  font-size: 10px;
+  font-weight: 500;
+  background: color-mix(in srgb, var(--focus) 10%, transparent);
+  color: var(--focus);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+
+.context-chip:hover { background: color-mix(in srgb, var(--focus) 18%, transparent); }
+.context-chip.active { background: var(--focus); color: var(--accentText); }
+
+/* --- Knowledge Base --- */
+.kb-layout {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 20px;
+  height: calc(100vh - 140px);
+}
+
+.kb-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow-y: auto;
+}
+
+.kb-nav-item {
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 150ms ease;
+  border: none;
+  background: transparent;
+  text-align: left;
+  width: 100%;
+}
+
+.kb-nav-item:hover {
+  color: var(--text);
+  background: color-mix(in srgb, var(--text) 5%, transparent);
+}
+
+.kb-nav-item.active {
+  color: var(--focus);
+  background: color-mix(in srgb, var(--focus) 10%, transparent);
+}
+
+.kb-content {
+  background: var(--panel2);
+  border: 1px solid color-mix(in srgb, var(--border) 8%, transparent);
+  border-radius: 10px;
+  padding: 28px;
+  overflow-y: auto;
+}
+
+.kb-content h2 {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  letter-spacing: -0.01em;
+}
+
+.kb-content h3 {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 20px 0 8px;
+  color: var(--focus);
+}
+
+.kb-content p {
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+
+.kb-content code {
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  font-size: 12px;
+  background: color-mix(in srgb, var(--text) 5%, transparent);
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+
+.kb-content pre {
+  background: color-mix(in srgb, var(--text) 4%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border) 6%, transparent);
+  border-radius: 6px;
+  padding: 14px;
+  overflow-x: auto;
+  margin-bottom: 16px;
+}
+
+.kb-content pre code {
+  background: transparent;
+  padding: 0;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.kb-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 16px;
+  font-size: 12px;
+}
+
+.kb-table th {
+  text-align: left;
+  padding: 8px 12px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 10%, transparent);
+}
+
+.kb-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 5%, transparent);
+  color: var(--text);
+}
+
+.kb-table tr:hover td {
+  background: color-mix(in srgb, var(--text) 2%, transparent);
+}
+
+/* --- Roadmap --- */
+.roadmap-cols {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  height: calc(100vh - 140px);
+}
+
+.roadmap-col {
+  display: flex;
+  flex-direction: column;
+  background: var(--panel);
+  border: 1px solid color-mix(in srgb, var(--border) 6%, transparent);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.roadmap-col-header {
+  padding: 14px 16px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 6%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.roadmap-count {
+  font-size: 10px;
+  font-weight: 600;
+  background: color-mix(in srgb, var(--text) 8%, transparent);
+  padding: 1px 6px;
+  border-radius: 8px;
+}
+
+.roadmap-cards {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.roadmap-card {
+  background: var(--panel2);
+  border: 1px solid color-mix(in srgb, var(--border) 6%, transparent);
+  border-radius: 8px;
+  padding: 12px;
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+
+.roadmap-card:hover {
+  border-color: color-mix(in srgb, var(--focus) 30%, transparent);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--text) 6%, transparent);
+}
+
+.roadmap-card-title {
+  font-size: 12px;
+  font-weight: 500;
+  margin-bottom: 6px;
+}
+
+.roadmap-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* --- Copy toast --- */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  background: var(--accentBg);
+  color: var(--accentText);
+  padding: 8px 20px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  z-index: 20000;
+  transition: transform 250ms ease;
+  pointer-events: none;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+}
+
+.toast.visible { transform: translateX(-50%) translateY(0); }
+
+/* --- Empty state --- */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  text-align: center;
+}
+
+.empty-state-icon {
+  color: var(--muted);
+  opacity: 0.25;
+  margin-bottom: 12px;
+}
+
+.empty-state-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+
+.empty-state-sub {
+  font-size: 12px;
+  color: var(--muted);
+  opacity: 0.6;
+}
+
+/* --- Activity Feed --- */
+.activity-item {
+  display: flex;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 5%, transparent);
+}
+
+.activity-item:last-child { border-bottom: none; }
+
+.activity-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-top: 4px;
+  flex-shrink: 0;
+}
+
+.activity-dot.dot-create { background: var(--runPassed); }
+.activity-dot.dot-update { background: var(--runRunning); }
+.activity-dot.dot-complete { background: var(--focus); }
+.activity-dot.dot-delete { background: var(--runFailed); }
+
+.activity-text {
+  font-size: 12px;
+  color: var(--text);
+  line-height: 1.4;
+}
+
+.activity-time {
+  font-size: 10px;
+  color: var(--muted);
+  opacity: 0.6;
+  margin-top: 2px;
+}
+
+/* --- Responsive --- */
+@media (max-width: 900px) {
+  .prompt-layout { grid-template-columns: 1fr; }
+  .prompt-sidebar { max-height: 200px; }
+  .kb-layout { grid-template-columns: 1fr; }
+  .kb-nav { flex-direction: row; flex-wrap: wrap; }
+  .roadmap-cols { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 600px) {
+  .shell-header { padding: 0 10px; }
+  .shell-nav { gap: 0; }
+  .shell-nav-btn { padding: 6px 8px; font-size: 11px; }
+  .page { padding: 16px; }
+  .roadmap-cols { grid-template-columns: 1fr; }
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* --- Prompt type selector --- */
+.prompt-type-tabs {
+  display: flex;
+  gap: 2px;
+  background: color-mix(in srgb, var(--text) 4%, transparent);
+  border-radius: 8px;
+  padding: 3px;
+}
+
+.prompt-type-tab {
+  padding: 5px 12px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--muted);
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+
+.prompt-type-tab:hover { color: var(--text); }
+.prompt-type-tab.active {
+  color: var(--text);
+  background: var(--panel2);
+  box-shadow: 0 1px 3px color-mix(in srgb, var(--text) 8%, transparent);
+}
+
+/* --- Detail view overlay --- */
+.detail-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  background: rgba(0,0,0,0.4);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.detail-overlay.open { display: flex; justify-content: flex-end; }
+
+.detail-panel {
+  width: 520px;
+  max-width: 95vw;
+  background: var(--panel);
+  border-left: 1px solid color-mix(in srgb, var(--border) 10%, transparent);
+  overflow-y: auto;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  animation: slideIn 200ms ease;
+}
+
+@keyframes slideIn {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+.detail-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.detail-title-group { flex: 1; }
+
+.detail-title {
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin-bottom: 8px;
+}
+
+.detail-badges {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.detail-section-title {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.detail-desc {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.detail-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.detail-field-label {
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.detail-field-value {
+  font-size: 13px;
+  color: var(--text);
+}
+
+.detail-actions {
+  display: flex;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid color-mix(in srgb, var(--border) 8%, transparent);
+}
+
+/* --- System Health Grid --- */
+/* --- Dashboard layout with health sidebar --- */
+.dash-layout {
+  display: grid;
+  grid-template-columns: 160px 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+.health-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  position: sticky;
+  top: 0;
+}
+
+.health-sidebar-title {
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  padding: 0 8px 6px;
+}
+
+.health-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+
+.health-row:hover {
+  background: color-mix(in srgb, var(--focus) 6%, transparent);
+}
+
+.health-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.health-dot.h-healthy {
+  background: var(--runPassed);
+  box-shadow: 0 0 4px color-mix(in srgb, var(--runPassed) 30%, transparent);
+}
+
+.health-dot.h-degraded {
+  background: var(--runRunning);
+  box-shadow: 0 0 5px color-mix(in srgb, var(--runRunning) 35%, transparent);
+  animation: healthPulse 2s ease infinite;
+}
+
+.health-dot.h-outage {
+  background: var(--runFailed);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--runFailed) 45%, transparent);
+  animation: healthPulse 1.2s ease infinite;
+}
+
+@keyframes healthPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.health-row-label {
+  font-size: 11px;
+  color: var(--text);
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.health-row-count {
+  font-size: 9px;
+  font-weight: 600;
+  min-width: 14px;
+  text-align: center;
+  padding: 0 4px;
+  border-radius: 6px;
+  line-height: 16px;
+  flex-shrink: 0;
+}
+
+.health-row-count.hc-ok {
+  color: var(--runPassed);
+}
+
+.health-row-count.hc-warn {
+  background: color-mix(in srgb, var(--runRunning) 12%, transparent);
+  color: var(--runRunning);
+}
+
+.health-row-count.hc-crit {
+  background: color-mix(in srgb, var(--runFailed) 12%, transparent);
+  color: var(--runFailed);
+}
+
+/* --- Area badge --- */
+.badge-area {
+  background: color-mix(in srgb, var(--text) 6%, transparent);
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 500;
+  padding: 2px 7px;
+  border-radius: 4px;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+/* --- Sub-area label --- */
+.sub-area-label {
+  font-size: 10px;
+  color: var(--muted);
+  opacity: 0.7;
+  font-style: italic;
+}
+</style>
+</head>
+<body>
+<div class="shell">
+  <!-- Header -->
+  <header class="shell-header">
+    <div class="shell-header-left">
+      <div class="shell-logo">
+        <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+          <rect x="1.5" y="1.5" width="13.67" height="6.33" rx="1.5"/>
+          <rect x="16.17" y="1.5" width="6.33" height="13.67" rx="1.5"/>
+          <rect x="1.5" y="8.83" width="6.33" height="13.67" rx="1.5"/>
+          <rect x="8.83" y="8.83" width="6.33" height="6.33" rx="1.5"/>
+          <rect x="8.83" y="16.17" width="6.33" height="6.33" rx="1.5"/>
+          <rect x="16.17" y="16.17" width="6.33" height="6.33" rx="1.5"/>
+        </svg>
+      </div>
+      <nav class="shell-nav">
+        <button class="shell-nav-btn active" data-page="dashboard">Dashboard</button>
+        <button class="shell-nav-btn" data-page="tracker">Tracker</button>
+        <button class="shell-nav-btn" data-page="prompts">Prompt Lab</button>
+        <button class="shell-nav-btn" data-page="kb">Knowledge Base</button>
+        <button class="shell-nav-btn" data-page="roadmap">Roadmap</button>
+      </nav>
+    </div>
+    <div class="shell-header-right">
+      <select class="theme-select" id="theme-select">
+        <option value="marshmallow">Marshmallow</option>
+        <option value="mocha">Mocha</option>
+        <option value="disco">Disco</option>
+        <option value="ronswanson">Ron Swanson</option>
+        <option value="gringo">Gringo</option>
+        <option value="matrix">Matrix</option>
+      </select>
+    </div>
+  </header>
+
+  <!-- Pages -->
+  <div class="main-content">
+
+    <!-- Dashboard -->
+    <div class="page active" id="page-dashboard"></div>
+
+    <!-- Tracker -->
+    <div class="page" id="page-tracker"></div>
+
+    <!-- Prompt Lab -->
+    <div class="page" id="page-prompts"></div>
+
+    <!-- Knowledge Base -->
+    <div class="page" id="page-kb"></div>
+
+    <!-- Roadmap -->
+    <div class="page" id="page-roadmap"></div>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal" id="modal"></div>
+</div>
+
+<!-- Detail Panel -->
+<div class="detail-overlay" id="detail-overlay">
+  <div class="detail-panel" id="detail-panel"></div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+// BentoBase Project Portal — Application Logic
+// ============================================================
+
+// --- Data Layer (file-backed via server API) ---
+const API_BASE = window.location.origin;
+const STORAGE_KEY = "bentobase_portal"; // legacy key for migration
+
+async function loadDataFromServer() {
+  try {
+    const res = await fetch(`${API_BASE}/api/data`);
+    if (res.ok) return await res.json();
+  } catch (e) {
+    console.warn("[Portal] Server fetch failed, falling back to localStorage:", e.message);
+  }
+  // Fallback: if server is unreachable, try localStorage
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch (e) {}
+  return { tickets: [], activity: [], kbNotes: {} };
+}
+
+function saveData(data) {
+  // Fire-and-forget save to server
+  fetch(`${API_BASE}/api/data`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  }).catch(err => console.warn("[Portal] Save failed:", err.message));
+}
+
+async function loadSettingsFromServer() {
+  try {
+    const res = await fetch(`${API_BASE}/api/settings`);
+    if (res.ok) return await res.json();
+  } catch (e) {}
+  return { theme: "marshmallow" };
+}
+
+function saveSettings(settings) {
+  fetch(`${API_BASE}/api/settings`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(settings),
+  }).catch(err => console.warn("[Portal] Settings save failed:", err.message));
+}
+
+// Migrate localStorage data to server on first load
+async function migrateLocalStorage() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    const localData = JSON.parse(raw);
+    if (!localData.tickets || localData.tickets.length === 0) return;
+
+    // Check if server already has data
+    const res = await fetch(`${API_BASE}/api/data`);
+    if (res.ok) {
+      const serverData = await res.json();
+      if (serverData.tickets && serverData.tickets.length > 0) return; // server already has data
+    }
+
+    // Push local data to server
+    await fetch(`${API_BASE}/api/data`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: raw,
+    });
+    console.log("[Portal] Migrated localStorage data to server files.");
+
+    // Migrate theme too
+    const savedTheme = localStorage.getItem("bb_portal_theme");
+    if (savedTheme) {
+      saveSettings({ theme: savedTheme });
+    }
+
+    // Clear localStorage after successful migration
+    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem("bb_portal_theme");
+    console.log("[Portal] Cleared legacy localStorage entries.");
+  } catch (e) {
+    console.warn("[Portal] Migration failed:", e.message);
+  }
+}
+
+let DATA = { tickets: [], activity: [], kbNotes: {} };
+
+function genId() {
+  return "BB-" + Math.random().toString(36).substring(2, 8).toUpperCase();
+}
+
+function now() { return new Date().toISOString(); }
+
+function addActivity(action, ticketId, title) {
+  DATA.activity.unshift({ action, ticketId, title, time: now() });
+  if (DATA.activity.length > 100) DATA.activity.length = 100;
+  saveData(DATA);
+}
+
+function formatTime(iso) {
+  const d = new Date(iso);
+  const diff = Date.now() - d;
+  if (diff < 60000) return "just now";
+  if (diff < 3600000) return Math.floor(diff / 60000) + "m ago";
+  if (diff < 86400000) return Math.floor(diff / 3600000) + "h ago";
+  if (diff < 604800000) return Math.floor(diff / 86400000) + "d ago";
+  return d.toLocaleDateString();
+}
+
+function esc(s) {
+  return String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+// --- App Areas ---
+const APP_AREAS = {
+  agents:     { label: "Agents",        icon: '\u2022', subareas: ["Agent editor", "Agent list", "Agent capabilities", "Agent classification", "Activity log", "Collaborators"] },
+  flows:      { label: "Flows",         icon: '\u2022', subareas: ["Canvas", "Node palette", "Inspector", "Library tab", "Agents tab", "SubFlow navigation", "Edge connections", "Node execution", "Drag & drop"] },
+  data:       { label: "Data",          icon: '\u2022', subareas: ["Connections", "Files", "Knowledge bases", "File upload", "Data preview"] },
+  interfaces: { label: "Interfaces",    icon: '\u2022', subareas: ["Interface editor", "Layout", "Components", "Preview"] },
+  community:  { label: "Community",     icon: '\u2022', subareas: ["Marketplace", "Discussion", "My Store", "Ratings", "Search & filter"] },
+  showcase:   { label: "Showcase",      icon: '\u2022', subareas: ["App gallery", "Full-screen viewer", "Featured apps", "Categories"] },
+  settings:   { label: "Settings",      icon: '\u2022', subareas: ["API providers", "Backend services", "MCP servers", "Account", "Theme"] },
+  security:   { label: "App Security",  icon: '\u2022', subareas: ["Auth & identity", "Data encryption", "Input validation", "Permissions", "API keys & secrets", "CSP & sandboxing"] },
+  structure:  { label: "App Structure", icon: '\u2022', subareas: ["Module layout", "State management", "Routing", "Build & packaging", "Electron shell", "File organization"] },
+  ux:         { label: "UX & Design",   icon: '\u2022', subareas: ["Theming", "Typography", "Layout & spacing", "Responsive", "Accessibility", "Animations"] },
+  perf:       { label: "Performance",   icon: '\u2022', subareas: ["Rendering", "Memory", "Load time", "Storage", "Large data sets"] },
+  docs:       { label: "Documentation", icon: '\u2022', subareas: ["README", "Inline docs", "Knowledge base", "API reference", "Onboarding"] },
+};
+
+const AREA_KEYS = Object.keys(APP_AREAS);
+
+function getAreaLabel(key) { return APP_AREAS[key]?.label || key || ""; }
+function getSubareas(areaKey) { return APP_AREAS[areaKey]?.subareas || []; }
+
+function getAreaHealth(areaKey) {
+  const areaTickets = DATA.tickets.filter(t => t.area === areaKey && t.status !== "done");
+  const critBugs = areaTickets.filter(t => t.type === "bug" && t.priority === "critical").length;
+  const highBugs = areaTickets.filter(t => t.type === "bug" && t.priority === "high").length;
+  const openCount = areaTickets.length;
+  if (critBugs > 0) return { level: "outage", label: `${critBugs} critical`, countClass: "hc-crit", count: openCount };
+  if (highBugs > 0) return { level: "degraded", label: `${highBugs} high-priority`, countClass: "hc-warn", count: openCount };
+  if (openCount > 0) return { level: "healthy", label: `${openCount} open`, countClass: "hc-ok", count: openCount };
+  return { level: "healthy", label: "No issues", countClass: "hc-ok", count: 0 };
+}
+
+// --- Theme ---
+const themeSelect = document.getElementById("theme-select");
+themeSelect.addEventListener("change", () => {
+  document.documentElement.setAttribute("data-theme", themeSelect.value);
+  saveSettings({ theme: themeSelect.value });
+});
+
+// --- Navigation ---
+let currentPage = "dashboard";
+
+document.querySelectorAll(".shell-nav-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    currentPage = btn.dataset.page;
+    document.querySelectorAll(".shell-nav-btn").forEach(b => b.classList.toggle("active", b === btn));
+    document.querySelectorAll(".page").forEach(p => p.classList.toggle("active", p.id === "page-" + currentPage));
+    renderCurrentPage();
+  });
+});
+
+function renderCurrentPage() {
+  const renderers = {
+    dashboard: renderDashboard,
+    tracker: renderTracker,
+    prompts: renderPromptLab,
+    kb: renderKB,
+    roadmap: renderRoadmap,
+  };
+  (renderers[currentPage] || (() => {}))();
+}
+
+// --- Modal ---
+const modalOverlay = document.getElementById("modal-overlay");
+const modalEl = document.getElementById("modal");
+
+function openModal(html) {
+  modalEl.innerHTML = html;
+  modalOverlay.classList.add("open");
+}
+
+function closeModal() {
+  modalOverlay.classList.remove("open");
+}
+
+modalOverlay.addEventListener("click", e => { if (e.target === modalOverlay) closeModal(); });
+
+// --- Detail Panel ---
+const detailOverlay = document.getElementById("detail-overlay");
+const detailPanel = document.getElementById("detail-panel");
+
+function openDetail(html) {
+  detailPanel.innerHTML = html;
+  detailOverlay.classList.add("open");
+}
+
+function closeDetail() {
+  detailOverlay.classList.remove("open");
+}
+
+detailOverlay.addEventListener("click", e => { if (e.target === detailOverlay) closeDetail(); });
+
+// --- Toast ---
+const toastEl = document.getElementById("toast");
+let toastTimer = null;
+
+function showToast(msg) {
+  clearTimeout(toastTimer);
+  toastEl.textContent = msg;
+  toastEl.classList.add("visible");
+  toastTimer = setTimeout(() => toastEl.classList.remove("visible"), 2400);
+}
+
+// --- Copy to clipboard ---
+function copyText(text) {
+  navigator.clipboard.writeText(text).then(() => showToast("Copied to clipboard"));
+}
+
+// === DASHBOARD ===
+function renderDashboard() {
+  const t = DATA.tickets;
+  const open = t.filter(x => x.status === "open").length;
+  const inProgress = t.filter(x => x.status === "progress").length;
+  const review = t.filter(x => x.status === "review").length;
+  const done = t.filter(x => x.status === "done").length;
+  const bugs = t.filter(x => x.type === "bug" && x.status !== "done").length;
+  const features = t.filter(x => x.type === "feature" && x.status !== "done").length;
+
+  const recentActivity = DATA.activity.slice(0, 12);
+  const recentTickets = [...t].sort((a, b) => (b.updatedAt || b.createdAt || "").localeCompare(a.updatedAt || a.createdAt || "")).slice(0, 5);
+
+  const dotClass = { create: "dot-create", update: "dot-update", complete: "dot-complete", delete: "dot-delete", prompt: "dot-update" };
+
+  // Health sidebar rows
+  const healthRows = AREA_KEYS.map(key => {
+    const h = getAreaHealth(key);
+    const a = APP_AREAS[key];
+    return `
+      <div class="health-row" onclick="drillToArea('${key}')">
+        <div class="health-dot h-${h.level}"></div>
+        <span class="health-row-label">${esc(a.label)}</span>
+        ${h.count > 0 ? `<span class="health-row-count ${h.countClass}">${h.count}</span>` : ""}
+      </div>
+    `;
+  }).join("");
+
+  document.getElementById("page-dashboard").innerHTML = `
+    <div class="page-title">Dashboard</div>
+    <div class="page-subtitle">BentoBase development overview</div>
+
+    <div class="dash-layout">
+      <div class="health-sidebar">
+        <div class="health-sidebar-title">System Health</div>
+        ${healthRows}
+      </div>
+
+      <div>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-label">Open</div>
+            <div class="stat-value">${open}</div>
+            <div class="stat-sub">tickets awaiting work</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">In Progress</div>
+            <div class="stat-value">${inProgress}</div>
+            <div class="stat-sub">actively being worked</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">In Review</div>
+            <div class="stat-value">${review}</div>
+            <div class="stat-sub">awaiting validation</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Completed</div>
+            <div class="stat-value">${done}</div>
+            <div class="stat-sub">shipped and verified</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Open Bugs</div>
+            <div class="stat-value" style="color:var(--runFailed)">${bugs}</div>
+            <div class="stat-sub">requiring fixes</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Planned Features</div>
+            <div class="stat-value" style="color:var(--focus)">${features}</div>
+            <div class="stat-sub">in the pipeline</div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:20px;">
+          <div>
+            <div class="section-title">Recent Activity</div>
+            <div class="card" style="padding:12px 16px;">
+              ${recentActivity.length === 0 ? '<div class="empty-state"><div class="empty-state-sub">No activity yet. Create your first ticket to get started.</div></div>' :
+                recentActivity.map(a => `
+                  <div class="activity-item">
+                    <div class="activity-dot ${dotClass[a.action] || "dot-update"}"></div>
+                    <div>
+                      <div class="activity-text">${esc(a.title)}</div>
+                      <div class="activity-time">${formatTime(a.time)}${a.ticketId ? ` \u00b7 ${esc(a.ticketId)}` : ""}</div>
+                    </div>
+                  </div>
+                `).join("")}
+            </div>
+          </div>
+          <div>
+            <div class="section-title">Recently Updated</div>
+            <div class="card" style="padding:12px 16px;">
+              ${recentTickets.length === 0 ? '<div class="empty-state"><div class="empty-state-sub">No tickets yet.</div></div>' :
+                recentTickets.map(t => `
+                  <div class="activity-item" style="cursor:pointer" onclick="openTicketDetail('${t.id}')">
+                    <div class="ticket-priority p-${t.priority}" style="width:3px;height:20px;border-radius:2px;margin-top:2px;flex-shrink:0"></div>
+                    <div style="flex:1;min-width:0">
+                      <div class="activity-text" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(t.title)}</div>
+                      <div class="activity-time">${esc(t.id)} \u00b7 ${formatTime(t.updatedAt || t.createdAt)}${t.area ? ` \u00b7 ${getAreaLabel(t.area)}` : ""}</div>
+                    </div>
+                    <span class="badge badge-${t.status}">${t.status === "progress" ? "In Progress" : t.status}</span>
+                  </div>
+                `).join("")}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function drillToArea(areaKey) {
+  trackerAreaFilter = areaKey;
+  trackerSearch = "";
+  trackerTypeFilter = "all";
+  trackerStatusFilter = "all";
+  trackerPriorityFilter = "all";
+  currentPage = "tracker";
+  document.querySelectorAll(".shell-nav-btn").forEach(b => b.classList.toggle("active", b.dataset.page === "tracker"));
+  document.querySelectorAll(".page").forEach(p => p.classList.toggle("active", p.id === "page-tracker"));
+  renderTracker();
+}
+
+function updateSubareaOptions(selectId, areaKey, currentValue) {
+  const sel = document.getElementById(selectId);
+  if (!sel) return;
+  if (!areaKey) {
+    sel.innerHTML = '<option value="">Select area first</option>';
+    sel.disabled = true;
+    return;
+  }
+  const subs = getSubareas(areaKey);
+  sel.innerHTML = '<option value="">None</option>' + subs.map(s => `<option value="${s}"${s === currentValue ? " selected" : ""}>${s}</option>`).join("");
+  sel.disabled = false;
+}
+
+// === TRACKER ===
+let trackerSearch = "";
+let trackerTypeFilter = "all";
+let trackerStatusFilter = "all";
+let trackerPriorityFilter = "all";
+let trackerAreaFilter = "all";
+
+function getFilteredTickets() {
+  let list = [...DATA.tickets];
+  if (trackerSearch) {
+    const q = trackerSearch.toLowerCase();
+    list = list.filter(t => t.title.toLowerCase().includes(q) || (t.description || "").toLowerCase().includes(q) || t.id.toLowerCase().includes(q) || getAreaLabel(t.area).toLowerCase().includes(q) || (t.subarea || "").toLowerCase().includes(q));
+  }
+  if (trackerTypeFilter !== "all") list = list.filter(t => t.type === trackerTypeFilter);
+  if (trackerStatusFilter !== "all") list = list.filter(t => t.status === trackerStatusFilter);
+  if (trackerPriorityFilter !== "all") list = list.filter(t => t.priority === trackerPriorityFilter);
+  if (trackerAreaFilter !== "all") list = list.filter(t => t.area === trackerAreaFilter);
+
+  // Sort: by priority weight then creation date
+  const pw = { critical: 0, high: 1, medium: 2, low: 3 };
+  const sw = { open: 0, progress: 1, review: 2, done: 3 };
+  list.sort((a, b) => sw[a.status] - sw[b.status] || pw[a.priority] - pw[b.priority] || (b.createdAt || "").localeCompare(a.createdAt || ""));
+  return list;
+}
+
+function renderTracker() {
+  const tickets = getFilteredTickets();
+  const statusLabel = { open: "Open", progress: "In Progress", review: "Review", done: "Done" };
+
+  document.getElementById("page-tracker").innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+      <div class="page-title">Tracker</div>
+      <button class="btn btn-primary" onclick="openNewTicketModal()">+ New Ticket</button>
+    </div>
+    <div class="page-subtitle">Bugs, features, and enhancements &mdash; ${DATA.tickets.length} total</div>
+
+    <div class="tracker-toolbar">
+      <input class="tracker-search" type="text" placeholder="Search tickets\u2026" value="${esc(trackerSearch)}" id="tracker-search" />
+      <select class="tracker-filter" id="tracker-type-filter">
+        <option value="all">All types</option>
+        <option value="bug"${trackerTypeFilter==="bug"?" selected":""}>Bugs</option>
+        <option value="feature"${trackerTypeFilter==="feature"?" selected":""}>Features</option>
+        <option value="enhancement"${trackerTypeFilter==="enhancement"?" selected":""}>Enhancements</option>
+        <option value="refactor"${trackerTypeFilter==="refactor"?" selected":""}>Refactors</option>
+        <option value="docs"${trackerTypeFilter==="docs"?" selected":""}>Docs</option>
+      </select>
+      <select class="tracker-filter" id="tracker-status-filter">
+        <option value="all">All statuses</option>
+        <option value="open"${trackerStatusFilter==="open"?" selected":""}>Open</option>
+        <option value="progress"${trackerStatusFilter==="progress"?" selected":""}>In Progress</option>
+        <option value="review"${trackerStatusFilter==="review"?" selected":""}>Review</option>
+        <option value="done"${trackerStatusFilter==="done"?" selected":""}>Done</option>
+      </select>
+      <select class="tracker-filter" id="tracker-priority-filter">
+        <option value="all">All priorities</option>
+        <option value="critical"${trackerPriorityFilter==="critical"?" selected":""}>Critical</option>
+        <option value="high"${trackerPriorityFilter==="high"?" selected":""}>High</option>
+        <option value="medium"${trackerPriorityFilter==="medium"?" selected":""}>Medium</option>
+        <option value="low"${trackerPriorityFilter==="low"?" selected":""}>Low</option>
+      </select>
+      <select class="tracker-filter" id="tracker-area-filter">
+        <option value="all">All areas</option>
+        ${AREA_KEYS.map(k => `<option value="${k}"${trackerAreaFilter===k?" selected":""}>${APP_AREAS[k].label}</option>`).join("")}
+      </select>
+    </div>
+
+    <div class="ticket-list">
+      ${tickets.length === 0 ? `
+        <div class="empty-state">
+          <div class="empty-state-icon"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M9 12h6M12 9v6"/></svg></div>
+          <div class="empty-state-title">No tickets${trackerSearch || trackerTypeFilter !== "all" || trackerStatusFilter !== "all" || trackerAreaFilter !== "all" ? " match your filters" : " yet"}</div>
+          <div class="empty-state-sub">Create your first ticket to start tracking work.</div>
+        </div>
+      ` : tickets.map(t => `
+        <div class="ticket-row${t.status === "done" ? " done-row" : ""}" onclick="openTicketDetail('${t.id}')">
+          <div class="ticket-priority p-${t.priority}"></div>
+          <div class="ticket-body">
+            <div class="ticket-title">${esc(t.title)}</div>
+            <div class="ticket-meta">
+              <span class="ticket-id">${esc(t.id)}</span>
+              <span class="badge badge-${t.type}">${esc(t.type)}</span>
+              <span class="badge badge-${t.status}">${esc(statusLabel[t.status] || t.status)}</span>
+              ${t.area ? `<span class="badge badge-area">${esc(getAreaLabel(t.area))}${t.subarea ? ` \u203A ${esc(t.subarea)}` : ""}</span>` : ""}
+              ${t.assignee ? `<span style="font-size:10px;color:var(--muted)">${esc(t.assignee)}</span>` : ""}
+            </div>
+          </div>
+          <div class="ticket-actions">
+            <button class="btn-icon" onclick="event.stopPropagation();generatePromptForTicket('${t.id}')" title="Generate Claude Prompt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2l8 4.5v7L12 18l-8-4.5v-7z"/><path d="M12 18v4"/><path d="M12 2v8"/></svg></button>
+            <button class="btn-icon" onclick="event.stopPropagation();cycleStatus('${t.id}')" title="Advance Status"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="9 6 15 12 9 18"/></svg></button>
+            <button class="btn-icon" onclick="event.stopPropagation();openEditTicketModal('${t.id}')" title="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z"/></svg></button>
+          </div>
+        </div>
+      `).join("")}
+    </div>
+  `;
+
+  // Bind filter events
+  document.getElementById("tracker-search")?.addEventListener("input", e => {
+    trackerSearch = e.target.value;
+    renderTracker();
+    const el = document.getElementById("tracker-search");
+    if (el) { el.focus(); el.selectionStart = el.selectionEnd = e.target.selectionStart; }
+  });
+  document.getElementById("tracker-type-filter")?.addEventListener("change", e => { trackerTypeFilter = e.target.value; renderTracker(); });
+  document.getElementById("tracker-status-filter")?.addEventListener("change", e => { trackerStatusFilter = e.target.value; renderTracker(); });
+  document.getElementById("tracker-priority-filter")?.addEventListener("change", e => { trackerPriorityFilter = e.target.value; renderTracker(); });
+  document.getElementById("tracker-area-filter")?.addEventListener("change", e => { trackerAreaFilter = e.target.value; renderTracker(); });
+}
+
+function cycleStatus(id) {
+  const t = DATA.tickets.find(x => x.id === id);
+  if (!t) return;
+  const order = ["open", "progress", "review", "done"];
+  const i = order.indexOf(t.status);
+  t.status = order[(i + 1) % order.length];
+  t.updatedAt = now();
+  addActivity(t.status === "done" ? "complete" : "update", t.id, `${t.title} \u2192 ${t.status}`);
+  saveData(DATA);
+  renderCurrentPage();
+}
+
+// --- Ticket Modal ---
+function openNewTicketModal() {
+  openModal(`
+    <div class="modal-header">
+      <div class="modal-title">New Ticket</div>
+      <button class="btn-icon" onclick="closeModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Title</label>
+        <input class="input" id="m-title" placeholder="Short, descriptive title" autofocus />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Description</label>
+        <textarea class="textarea" id="m-desc" placeholder="What needs to happen? Include context, steps to reproduce (for bugs), or acceptance criteria."></textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Type</label>
+          <select class="select" id="m-type">
+            <option value="bug">Bug</option>
+            <option value="feature" selected>Feature</option>
+            <option value="enhancement">Enhancement</option>
+            <option value="refactor">Refactor</option>
+            <option value="docs">Docs</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Priority</label>
+          <select class="select" id="m-priority">
+            <option value="low">Low</option>
+            <option value="medium" selected>Medium</option>
+            <option value="high">High</option>
+            <option value="critical">Critical</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Area</label>
+          <select class="select" id="m-area" onchange="updateSubareaOptions('m-subarea', this.value)">
+            <option value="">None</option>
+            ${AREA_KEYS.map(k => `<option value="${k}">${APP_AREAS[k].label}</option>`).join("")}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Sub-area</label>
+          <select class="select" id="m-subarea" disabled>
+            <option value="">Select area first</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Assignee</label>
+          <input class="input" id="m-assignee" placeholder="(optional)" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Files Affected</label>
+          <input class="input" id="m-files" placeholder="e.g. src/ui/editor.js, src/app.css" />
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="submitNewTicket()">Create Ticket</button>
+    </div>
+  `);
+  setTimeout(() => document.getElementById("m-title")?.focus(), 50);
+}
+
+function submitNewTicket() {
+  const title = document.getElementById("m-title")?.value.trim();
+  if (!title) return;
+  const ticket = {
+    id: genId(),
+    title,
+    description: document.getElementById("m-desc")?.value.trim() || "",
+    type: document.getElementById("m-type")?.value || "feature",
+    priority: document.getElementById("m-priority")?.value || "medium",
+    status: "open",
+    area: document.getElementById("m-area")?.value || "",
+    subarea: document.getElementById("m-subarea")?.value || "",
+    assignee: document.getElementById("m-assignee")?.value.trim() || "",
+    files: document.getElementById("m-files")?.value.trim() || "",
+    createdAt: now(),
+    updatedAt: now(),
+  };
+  DATA.tickets.push(ticket);
+  addActivity("create", ticket.id, `Created: ${ticket.title}`);
+  saveData(DATA);
+  closeModal();
+  renderCurrentPage();
+}
+
+function openEditTicketModal(id) {
+  const t = DATA.tickets.find(x => x.id === id);
+  if (!t) return;
+  closeDetail();
+  openModal(`
+    <div class="modal-header">
+      <div class="modal-title">Edit ${esc(t.id)}</div>
+      <button class="btn-icon" onclick="closeModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Title</label>
+        <input class="input" id="m-title" value="${esc(t.title)}" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Description</label>
+        <textarea class="textarea" id="m-desc">${esc(t.description)}</textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Type</label>
+          <select class="select" id="m-type">
+            ${["bug","feature","enhancement","refactor","docs"].map(v => `<option value="${v}"${t.type===v?" selected":""}>${v}</option>`).join("")}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Priority</label>
+          <select class="select" id="m-priority">
+            ${["low","medium","high","critical"].map(v => `<option value="${v}"${t.priority===v?" selected":""}>${v}</option>`).join("")}
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Status</label>
+          <select class="select" id="m-status">
+            ${["open","progress","review","done"].map(v => `<option value="${v}"${t.status===v?" selected":""}>${v === "progress" ? "In Progress" : v}</option>`).join("")}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Assignee</label>
+          <input class="input" id="m-assignee" value="${esc(t.assignee || "")}" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Area</label>
+          <select class="select" id="m-area" onchange="updateSubareaOptions('m-subarea', this.value, '')">
+            <option value="">None</option>
+            ${AREA_KEYS.map(k => `<option value="${k}"${t.area===k?" selected":""}>${APP_AREAS[k].label}</option>`).join("")}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Sub-area</label>
+          <select class="select" id="m-subarea"${t.area ? "" : " disabled"}>
+            ${t.area ? [`<option value="">None</option>`, ...getSubareas(t.area).map(s => `<option value="${s}"${t.subarea===s?" selected":""}>${s}</option>`)].join("") : `<option value="">Select area first</option>`}
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Files Affected</label>
+        <input class="input" id="m-files" value="${esc(t.files || "")}" />
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-danger" onclick="deleteTicket('${t.id}')">Delete</button>
+      <div style="flex:1"></div>
+      <button class="btn" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="submitEditTicket('${t.id}')">Save</button>
+    </div>
+  `);
+}
+
+function submitEditTicket(id) {
+  const t = DATA.tickets.find(x => x.id === id);
+  if (!t) return;
+  t.title = document.getElementById("m-title")?.value.trim() || t.title;
+  t.description = document.getElementById("m-desc")?.value.trim() || "";
+  t.type = document.getElementById("m-type")?.value || t.type;
+  t.priority = document.getElementById("m-priority")?.value || t.priority;
+  t.status = document.getElementById("m-status")?.value || t.status;
+  t.area = document.getElementById("m-area")?.value || "";
+  t.subarea = document.getElementById("m-subarea")?.value || "";
+  t.assignee = document.getElementById("m-assignee")?.value.trim() || "";
+  t.files = document.getElementById("m-files")?.value.trim() || "";
+  t.updatedAt = now();
+  addActivity("update", t.id, `Updated: ${t.title}`);
+  saveData(DATA);
+  closeModal();
+  renderCurrentPage();
+}
+
+function deleteTicket(id) {
+  const t = DATA.tickets.find(x => x.id === id);
+  if (!t) return;
+  if (!confirm(`Delete "${t.title}"? This cannot be undone.`)) return;
+  DATA.tickets = DATA.tickets.filter(x => x.id !== id);
+  addActivity("delete", id, `Deleted: ${t.title}`);
+  saveData(DATA);
+  closeModal();
+  closeDetail();
+  renderCurrentPage();
+}
+
+// --- Ticket Detail ---
+function openTicketDetail(id) {
+  const t = DATA.tickets.find(x => x.id === id);
+  if (!t) return;
+  const statusLabel = { open: "Open", progress: "In Progress", review: "Review", done: "Done" };
+  openDetail(`
+    <div class="detail-header">
+      <div class="detail-title-group">
+        <div class="detail-title">${esc(t.title)}</div>
+        <div class="detail-badges">
+          <span class="badge badge-${t.type}">${esc(t.type)}</span>
+          <span class="badge badge-${t.priority}">${esc(t.priority)}</span>
+          <span class="badge badge-${t.status}">${esc(statusLabel[t.status] || t.status)}</span>
+          ${t.area ? `<span class="badge badge-area">${esc(getAreaLabel(t.area))}</span>` : ""}
+        </div>
+      </div>
+      <button class="btn-icon" onclick="closeDetail()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+
+    <div>
+      <div class="detail-section-title">Description</div>
+      <div class="detail-desc">${esc(t.description) || '<span style="opacity:0.4;font-style:italic">No description provided.</span>'}</div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+      <div class="detail-field">
+        <div class="detail-field-label">ID</div>
+        <div class="detail-field-value" style="font-family:monospace">${esc(t.id)}</div>
+      </div>
+      <div class="detail-field">
+        <div class="detail-field-label">Assignee</div>
+        <div class="detail-field-value">${esc(t.assignee) || "\u2014"}</div>
+      </div>
+      <div class="detail-field">
+        <div class="detail-field-label">Created</div>
+        <div class="detail-field-value">${formatTime(t.createdAt)}</div>
+      </div>
+      <div class="detail-field">
+        <div class="detail-field-label">Updated</div>
+        <div class="detail-field-value">${formatTime(t.updatedAt || t.createdAt)}</div>
+      </div>
+      <div class="detail-field">
+        <div class="detail-field-label">Area</div>
+        <div class="detail-field-value">${t.area ? esc(getAreaLabel(t.area)) : "\u2014"}</div>
+      </div>
+      <div class="detail-field">
+        <div class="detail-field-label">Sub-area</div>
+        <div class="detail-field-value">${t.subarea ? esc(t.subarea) : "\u2014"}</div>
+      </div>
+    </div>
+
+    ${t.files ? `
+      <div>
+        <div class="detail-section-title">Files Affected</div>
+        <div style="font-size:12px;font-family:monospace;line-height:1.6;color:var(--muted)">${esc(t.files).split(",").map(f => f.trim()).filter(Boolean).map(f => `<div>${f}</div>`).join("")}</div>
+      </div>
+    ` : ""}
+
+    <div class="detail-actions">
+      <button class="btn btn-primary" onclick="generatePromptForTicket('${t.id}');closeDetail()">Generate Claude Prompt</button>
+      <button class="btn" onclick="openEditTicketModal('${t.id}')">Edit</button>
+      <button class="btn" onclick="cycleStatus('${t.id}');closeDetail()">Advance Status</button>
+    </div>
+  `);
+}
+
+// === PROMPT LAB ===
+let selectedPromptTicket = null;
+let promptType = "fix";
+let lastGeneratedPrompt = "";
+
+function renderPromptLab() {
+  const openTickets = DATA.tickets.filter(t => t.status !== "done");
+
+  document.getElementById("page-prompts").innerHTML = `
+    <div class="page-title">Prompt Lab</div>
+    <div class="page-subtitle">Generate Claude Code prompts from tickets or create custom prompts</div>
+
+    <div class="prompt-layout">
+      <div class="prompt-sidebar">
+        <div class="section-title">Select a ticket</div>
+        ${openTickets.length === 0 ? '<div class="empty-state"><div class="empty-state-sub">No open tickets. Create one in the Tracker.</div></div>' :
+          openTickets.map(t => `
+            <div class="prompt-ticket-card${selectedPromptTicket === t.id ? " selected" : ""}" onclick="selectPromptTicket('${t.id}')">
+              <div style="display:flex;gap:6px;align-items:center;margin-bottom:4px;flex-wrap:wrap;">
+                <span class="badge badge-${t.type}" style="font-size:9px">${esc(t.type)}</span>
+                <span class="badge badge-${t.priority}" style="font-size:9px">${esc(t.priority)}</span>
+                ${t.area ? `<span class="badge badge-area" style="font-size:9px">${esc(getAreaLabel(t.area))}</span>` : ""}
+              </div>
+              <div class="prompt-ticket-name">${esc(t.title)}</div>
+              ${t.description ? `<div class="prompt-ticket-desc">${esc(t.description)}</div>` : ""}
+            </div>
+          `).join("")}
+      </div>
+
+      <div class="prompt-main">
+        <div class="prompt-controls">
+          <div class="prompt-type-tabs">
+            ${["fix","implement","refactor","test","review"].map(p => `<button class="prompt-type-tab${promptType===p?" active":""}" onclick="setPromptType('${p}')">${p.charAt(0).toUpperCase()+p.slice(1)}</button>`).join("")}
+          </div>
+          <div style="flex:1"></div>
+          <button class="btn btn-sm" onclick="copyText(lastGeneratedPrompt)" ${!lastGeneratedPrompt?"disabled":""}>Copy</button>
+          <button class="btn btn-primary btn-sm" onclick="generateCurrentPrompt()">Generate</button>
+        </div>
+
+        <div class="prompt-output" id="prompt-output">
+          ${lastGeneratedPrompt ? esc(lastGeneratedPrompt) : '<span class="prompt-output-empty">Select a ticket and click Generate, or choose a prompt type to create a custom prompt.</span>'}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function selectPromptTicket(id) {
+  selectedPromptTicket = selectedPromptTicket === id ? null : id;
+  renderPromptLab();
+}
+
+function setPromptType(type) {
+  promptType = type;
+  renderPromptLab();
+}
+
+function generateCurrentPrompt() {
+  const ticket = selectedPromptTicket ? DATA.tickets.find(t => t.id === selectedPromptTicket) : null;
+  lastGeneratedPrompt = buildPrompt(ticket, promptType);
+  addActivity("prompt", ticket?.id || null, `Generated ${promptType} prompt${ticket ? ": " + ticket.title : ""}`);
+  saveData(DATA);
+  renderPromptLab();
+}
+
+function generatePromptForTicket(id) {
+  selectedPromptTicket = id;
+  const t = DATA.tickets.find(x => x.id === id);
+  promptType = t?.type === "bug" ? "fix" : "implement";
+  lastGeneratedPrompt = buildPrompt(t, promptType);
+  addActivity("prompt", id, `Generated ${promptType} prompt: ${t?.title || id}`);
+  saveData(DATA);
+  // Switch to prompt lab
+  currentPage = "prompts";
+  document.querySelectorAll(".shell-nav-btn").forEach(b => b.classList.toggle("active", b.dataset.page === "prompts"));
+  document.querySelectorAll(".page").forEach(p => p.classList.toggle("active", p.id === "page-prompts"));
+  renderPromptLab();
+}
+
+function buildPrompt(ticket, type) {
+  const lines = [];
+  const divider = "---";
+
+  if (ticket) {
+    lines.push(`# ${type.charAt(0).toUpperCase() + type.slice(1)}: ${ticket.title}`);
+    lines.push("");
+    lines.push(`**Ticket:** ${ticket.id}`);
+    lines.push(`**Type:** ${ticket.type} | **Priority:** ${ticket.priority} | **Status:** ${ticket.status}`);
+    if (ticket.area) lines.push(`**Area:** ${getAreaLabel(ticket.area)}${ticket.subarea ? ` \u203A ${ticket.subarea}` : ""}`);
+    if (ticket.assignee) lines.push(`**Assignee:** ${ticket.assignee}`);
+    lines.push("");
+
+    if (ticket.description) {
+      lines.push("## Context");
+      lines.push("");
+      lines.push(ticket.description);
+      lines.push("");
+    }
+
+    if (ticket.files) {
+      lines.push("## Files to Modify");
+      lines.push("");
+      ticket.files.split(",").map(f => f.trim()).filter(Boolean).forEach(f => {
+        lines.push(`- \`${f}\``);
+      });
+      lines.push("");
+    }
+
+    lines.push(divider);
+    lines.push("");
+  }
+
+  // Prompt body based on type
+  switch (type) {
+    case "fix":
+      lines.push("## Instructions");
+      lines.push("");
+      lines.push(`${ticket ? "Fix the bug described above." : "Fix the following bug:"}`);
+      lines.push("");
+      lines.push("1. Read the relevant files to understand the current behavior");
+      lines.push("2. Identify the root cause of the issue");
+      lines.push("3. Implement the minimal fix that resolves the problem");
+      lines.push("4. Do not refactor unrelated code or add features beyond the fix");
+      lines.push("5. Preserve existing patterns and conventions in the codebase");
+      if (ticket?.files) {
+        lines.push("");
+        lines.push(`Start by reading: ${ticket.files.split(",")[0].trim()}`);
+      }
+      break;
+
+    case "implement":
+      lines.push("## Instructions");
+      lines.push("");
+      lines.push(`${ticket ? "Implement the feature described above." : "Implement the following feature:"}`);
+      lines.push("");
+      lines.push("1. Study the existing codebase patterns before writing any code");
+      lines.push("2. Follow the project's naming conventions and file organization");
+      lines.push("3. Keep the implementation minimal and focused on the requirements");
+      lines.push("4. Mirror existing UI patterns (see app.css for component styles)");
+      lines.push("5. Wire up any state management through the existing store/dispatch pattern");
+      break;
+
+    case "refactor":
+      lines.push("## Instructions");
+      lines.push("");
+      lines.push(`${ticket ? "Refactor the code described above." : "Refactor the following code:"}`);
+      lines.push("");
+      lines.push("1. Read the current implementation thoroughly");
+      lines.push("2. Identify the specific improvements needed");
+      lines.push("3. Preserve all existing behavior \u2014 this is a refactor, not a feature change");
+      lines.push("4. Keep changes minimal and reviewable");
+      lines.push("5. Do not change public APIs or data structures unless necessary");
+      break;
+
+    case "test":
+      lines.push("## Instructions");
+      lines.push("");
+      lines.push(`${ticket ? "Write a test plan for the feature described above." : "Write a test plan for the following:"}`);
+      lines.push("");
+      lines.push("Provide:");
+      lines.push("1. Manual test steps that verify the feature works correctly");
+      lines.push("2. Edge cases and boundary conditions to check");
+      lines.push("3. Regression risks \u2014 what existing features could break");
+      lines.push("4. A checklist format suitable for the validation team");
+      break;
+
+    case "review":
+      lines.push("## Instructions");
+      lines.push("");
+      lines.push(`${ticket ? "Review the implementation of the feature described above." : "Review the following implementation:"}`);
+      lines.push("");
+      lines.push("Check for:");
+      lines.push("1. Correctness \u2014 does it do what the ticket describes?");
+      lines.push("2. Security \u2014 any injection, XSS, or data exposure risks?");
+      lines.push("3. Performance \u2014 unnecessary re-renders, large DOM updates, memory leaks?");
+      lines.push("4. Consistency \u2014 does it follow the project\u2019s patterns?");
+      lines.push("5. Edge cases \u2014 empty states, error states, missing data?");
+      break;
+  }
+
+  lines.push("");
+  lines.push(divider);
+  lines.push("");
+  lines.push("**Project:** BentoBase (Bento_Canvas)");
+  lines.push("**Stack:** Vanilla JS, custom state store (dispatch/reduce), file-backed JSON persistence, CSS custom properties theming");
+  lines.push("**Working Directory:** /Users/joshuasoto/Dropbox/Bento_Canvas/Bento_Canvas");
+
+  return lines.join("\n");
+}
+
+// === KNOWLEDGE BASE ===
+let kbSection = "architecture";
+
+const KB_SECTIONS = {
+  architecture: { label: "Architecture", render: renderKBArchitecture },
+  fileMap: { label: "File Map", render: renderKBFileMap },
+  patterns: { label: "Patterns", render: renderKBPatterns },
+  state: { label: "State & Store", render: renderKBState },
+  nodes: { label: "Node System", render: renderKBNodes },
+  themes: { label: "Theming", render: renderKBThemes },
+  agents: { label: "Agents", render: renderKBAgents },
+  conventions: { label: "Conventions", render: renderKBConventions },
+};
+
+function renderKB() {
+  document.getElementById("page-kb").innerHTML = `
+    <div class="page-title">Knowledge Base</div>
+    <div class="page-subtitle">Canonical reference for the BentoBase codebase</div>
+
+    <div class="kb-layout">
+      <div class="kb-nav">
+        ${Object.entries(KB_SECTIONS).map(([key, sec]) => `
+          <button class="kb-nav-item${kbSection === key ? " active" : ""}" onclick="setKBSection('${key}')">${sec.label}</button>
+        `).join("")}
+      </div>
+      <div class="kb-content" id="kb-content"></div>
+    </div>
+  `;
+  (KB_SECTIONS[kbSection]?.render || (() => {}))();
+}
+
+function setKBSection(key) {
+  kbSection = key;
+  renderKB();
+}
+
+function renderKBArchitecture() {
+  document.getElementById("kb-content").innerHTML = `
+    <h2>Architecture Overview</h2>
+    <p>BentoBase is a <strong>sovereign-first AI flow editor</strong> built as a vanilla JavaScript single-page application. It uses a custom unidirectional state store (dispatch/reduce pattern), file-backed JSON persistence, and CSS custom properties for theming.</p>
+
+    <h3>Core Principles</h3>
+    <p><strong>No frameworks.</strong> Pure vanilla JS with ES module imports. No React, no Vue, no build step beyond optional Electron packaging.</p>
+    <p><strong>Declarative nodes.</strong> Nodes carry metadata and annotations but no execution logic in the graph itself. Execution is handled by a separate runtime layer.</p>
+    <p><strong>Sovereignty.</strong> Data stays local. All flows, agents, and settings persist to local JSON files. Remote services are opt-in and scoped.</p>
+
+    <h3>Layer Diagram</h3>
+    <pre><code>UI Layer        \u2502 editor.js, nodeView.js, agents.js, shell.js
+Canvas Layer    \u2502 pan.js, camera.js, dragCreate.js, connect.js
+State Layer     \u2502 store.js, actions.js, reducer.js, schema.js
+Graph Layer     \u2502 nodeDefaults.js, schemaHints.js, topoSort.js
+Runtime Layer   \u2502 nodes/*.js (executors per node type)
+Storage Layer   \u2502 flows.js (file-backed JSON CRUD)
+API Layer       \u2502 mcpClient.js, agentsClient.js</code></pre>
+
+    <h3>Data Flow</h3>
+    <p>User interaction \u2192 <code>store.dispatch(action)</code> \u2192 reducer produces new state \u2192 <code>renderEditor()</code> re-renders the UI from state. State is the single source of truth.</p>
+  `;
+}
+
+function renderKBFileMap() {
+  document.getElementById("kb-content").innerHTML = `
+    <h2>File Map</h2>
+    <table class="kb-table">
+      <thead><tr><th>Path</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td><code>src/state/schema.js</code></td><td>NodeType enum, factory functions (createNode, createAgentNode, createSubFlowNode, etc.)</td></tr>
+        <tr><td><code>src/state/actions.js</code></td><td>ActionType enum \u2014 all dispatch action strings</td></tr>
+        <tr><td><code>src/state/store.js</code></td><td>Unidirectional store: getState, dispatch, subscribe</td></tr>
+        <tr><td><code>src/state/reducer.js</code></td><td>Main reducer handling all action types</td></tr>
+        <tr><td><code>src/graph/nodeDefaults.js</code></td><td>NODE_CATEGORIES, NODE_TYPES, getNodeSize, getNodeCategory, makeDefaultPorts</td></tr>
+        <tr><td><code>src/graph/schemaHints.js</code></td><td>Upstream schema inference for port suggestions</td></tr>
+        <tr><td><code>src/canvas/dragCreate.js</code></td><td>Drag-to-create handler for palette, library, and agents drops</td></tr>
+        <tr><td><code>src/canvas/pan.js</code></td><td>Canvas pan/zoom via pointer events</td></tr>
+        <tr><td><code>src/canvas/camera.js</code></td><td>Viewport transform math (applyTransform)</td></tr>
+        <tr><td><code>src/ui/editor.js</code></td><td>Main editor UI: topbar, palette, canvas, inspector (Properties + Library + Agents tabs)</td></tr>
+        <tr><td><code>src/ui/nodeView.js</code></td><td>Node HTML rendering, shape classes, port rendering</td></tr>
+        <tr><td><code>src/ui/agents.js</code></td><td>Agents workspace tab (full CRUD, list/detail/editor views)</td></tr>
+        <tr><td><code>src/ui/agentEditor.js</code></td><td>Agent editor form, CLASSIFICATIONS definition</td></tr>
+        <tr><td><code>src/ui/shell.js</code></td><td>App shell: tab bar, theme switching, route management</td></tr>
+        <tr><td><code>src/storage/flows.js</code></td><td>Flow CRUD: listFlows, loadFlow, saveFlow, deleteFlow, duplicateFlow</td></tr>
+        <tr><td><code>src/api/mcpClient.js</code></td><td>MCP server communication for flow execution</td></tr>
+        <tr><td><code>src/api/agentsClient.js</code></td><td>REST client for agents server (port 3009)</td></tr>
+        <tr><td><code>src/app.css</code></td><td>All styles: themes, layout, components (~16k lines)</td></tr>
+        <tr><td><code>src/runtime/nodes/*.js</code></td><td>Per-node-type executors (conditionalRouting, sessionMemory, etc.)</td></tr>
+      </tbody>
+    </table>
+  `;
+}
+
+function renderKBPatterns() {
+  document.getElementById("kb-content").innerHTML = `
+    <h2>Code Patterns</h2>
+
+    <h3>Adding a New Node Type</h3>
+    <p>Follow this checklist when adding any new node type to the system:</p>
+    <pre><code>1. schema.js       \u2192 Add to NodeType enum, create factory function
+2. nodeDefaults.js  \u2192 Add config, category handler, sizing
+3. dragCreate.js    \u2192 Add drop handler with custom ports/params
+4. nodeView.js      \u2192 Add shape class, rendering attributes
+5. app.css          \u2192 Add node-specific styles
+6. (optional) runtime/nodes/  \u2192 Add executor if node has runtime behavior</code></pre>
+
+    <h3>Inspector Tab Pattern</h3>
+    <p>The inspector uses a tab system. To add a new tab:</p>
+    <pre><code>1. Add &lt;button class="panel-tab" data-tab="name"&gt; in HTML
+2. Add &lt;div class="panel-body panel-tab-content" id="name-body" data-tab="name"&gt;
+3. Add element ref: const nameBody = root.querySelector("#name-body")
+4. Add to switchInspectorTab(): else if (tabName === "name") renderNameTab()
+5. Implement renderNameTab() function</code></pre>
+
+    <h3>Drag-and-Drop MIME Types</h3>
+    <table class="kb-table">
+      <thead><tr><th>MIME Type</th><th>Source</th><th>Creates</th></tr></thead>
+      <tbody>
+        <tr><td><code>application/x-ssf-node-type</code></td><td>Palette tiles</td><td>Standard node</td></tr>
+        <tr><td><code>application/x-ssf-flow-id</code></td><td>Library tab</td><td>SubFlow node</td></tr>
+        <tr><td><code>application/x-ssf-agent-id</code></td><td>Agents tab</td><td>Agent node</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Cycle Detection</h3>
+    <p>Three layers prevent recursive loops:</p>
+    <pre><code>1. wouldCreateCycle()       \u2014 SubFlow drops: checks ancestor + descendant chains
+2. wouldCreateAgentCycle()  \u2014 Agent drops: checks agent-associated flow chains
+3. Kahn's topological sort  \u2014 Execution time: catches intra-flow DAG cycles</code></pre>
+  `;
+}
+
+function renderKBState() {
+  document.getElementById("kb-content").innerHTML = `
+    <h2>State & Store</h2>
+
+    <h3>Store API</h3>
+    <pre><code>const store = createStore(reducer, initialState);
+store.getState()          // \u2192 current state snapshot
+store.dispatch({ type })  // \u2192 runs reducer, notifies subscribers
+store.subscribe(fn)       // \u2192 called after every dispatch</code></pre>
+
+    <h3>State Shape</h3>
+    <pre><code>{
+  flow: {                  // Current flow being edited
+    id, name, description,
+    agents: [],            // Agent IDs associated with this flow
+    nodes: [],             // Array of node objects
+    edges: [],             // Array of edge objects
+    viewport: { panX, panY, zoom }
+  },
+  selectedNodes: [],       // Array of selected node IDs
+  flowStack: [],           // Breadcrumb for sub-flow navigation
+  clipboard: null,         // Copy/paste buffer
+}</code></pre>
+
+    <h3>Key Actions</h3>
+    <table class="kb-table">
+      <thead><tr><th>Action</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td><code>NODE_ADD</code></td><td>Add a node to the flow</td></tr>
+        <tr><td><code>NODE_REMOVE</code></td><td>Delete node(s) and connected edges</td></tr>
+        <tr><td><code>NODE_MOVE</code></td><td>Update node position(s)</td></tr>
+        <tr><td><code>SELECT_NODE</code></td><td>Set selection to a single node</td></tr>
+        <tr><td><code>EDGE_ADD</code></td><td>Connect two ports</td></tr>
+        <tr><td><code>FLOW_LOAD</code></td><td>Replace current flow state</td></tr>
+      </tbody>
+    </table>
+  `;
+}
+
+function renderKBNodes() {
+  document.getElementById("kb-content").innerHTML = `
+    <h2>Node System</h2>
+
+    <h3>Node Types by Category</h3>
+    <table class="kb-table">
+      <thead><tr><th>Category</th><th>Types</th><th>I/O</th></tr></thead>
+      <tbody>
+        <tr><td>Input</td><td>FileInput, SensorInput, FormInput, APIInput</td><td>0 in / 1 out</td></tr>
+        <tr><td>Signal</td><td>NetworkSignal, SystemHealthSignal, ExternalEventSignal</td><td>0-1 in / 1 out</td></tr>
+        <tr><td>Transform</td><td>NormalizeClean, FormatConversion, ParseSegment, ExtractFields, ComposeReshape</td><td>1 in / 1 out</td></tr>
+        <tr><td>Masking</td><td>TextAnonymization, ImageRedaction, FieldLevelMasking, TokenSubstitution</td><td>1 in / 1 out</td></tr>
+        <tr><td>Model</td><td>LocalModel, RemoteModel, MediaGenerator, DomainSpecificModel</td><td>4 in / 3 out</td></tr>
+        <tr><td>Memory</td><td>ShortTermMemory, LongTermMemory, SessionMemory</td><td>1 in / 1+ out</td></tr>
+        <tr><td>Routing</td><td>ConditionalRouting, PriorityRouting, WeightedRouting</td><td>1-2 in / 2+ out</td></tr>
+        <tr><td>Output</td><td>TextOutput, MediaOutput, DatabaseOutput, WebhookOutput</td><td>1-2 in / 0-1 out</td></tr>
+        <tr><td>Preview</td><td>MediaPreview</td><td>1 in / 1 out</td></tr>
+        <tr><td>SubFlow</td><td>(dynamic, from Library tab)</td><td>dynamic</td></tr>
+        <tr><td>Agent</td><td>(dynamic, from Agents tab)</td><td>1 in / 1 out</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Node Object Shape</h3>
+    <pre><code>{
+  id: "node_xxx",
+  type: "RemoteModel",
+  title: "GPT-4",
+  position: { x: 200, y: 100 },
+  ports: {
+    inputs: [{ id, name, side, kind, dock, index, label }],
+    outputs: [{ id, name, side, kind, dock, index, label }]
+  },
+  params: { ... },       // Node-type-specific config
+  metadata: { name, description, notes, tags },
+  annotations: { intent, flags }
+}</code></pre>
+
+    <h3>Agent Classification System</h3>
+    <table class="kb-table">
+      <thead><tr><th>Classification</th><th>Color</th><th>Role</th></tr></thead>
+      <tbody>
+        <tr><td>Observer</td><td style="color:#6b7a8d">#6b7a8d</td><td>Perceives inputs, converts signal to data</td></tr>
+        <tr><td>Analyst</td><td style="color:#8b5cf6">#8b5cf6</td><td>Interprets information, generates plans</td></tr>
+        <tr><td>Orchestrator</td><td style="color:#d97706">#d97706</td><td>Coordinates agents, determines flow</td></tr>
+        <tr><td>Operator</td><td style="color:#16a34a">#16a34a</td><td>Executes actions, uses tools and flows</td></tr>
+        <tr><td>Archivist</td><td style="color:#3b82f6">#3b82f6</td><td>Manages memory, retrieval, and storage</td></tr>
+      </tbody>
+    </table>
+  `;
+}
+
+function renderKBThemes() {
+  document.getElementById("kb-content").innerHTML = `
+    <h2>Theming</h2>
+    <p>BentoBase uses CSS custom properties for theming, with 6 built-in themes selectable via <code>html[data-theme]</code>.</p>
+
+    <h3>Theme Palette</h3>
+    <table class="kb-table">
+      <thead><tr><th>Theme</th><th>--bg</th><th>--focus</th><th>Aesthetic</th></tr></thead>
+      <tbody>
+        <tr><td>Marshmallow</td><td>#f7f7f7</td><td style="color:#7c5b45">#7c5b45</td><td>Light, warm, earthy</td></tr>
+        <tr><td>Mocha</td><td>#1b1613</td><td style="color:#e2b88f">#e2b88f</td><td>Dark, warm, caramel</td></tr>
+        <tr><td>Disco</td><td>#120b1f</td><td style="color:#00f5ff">#00f5ff</td><td>Dark, neon, vibrant</td></tr>
+        <tr><td>Ron Swanson</td><td>#0f1620</td><td style="color:#f6c177">#f6c177</td><td>Dark, whiskey/leather</td></tr>
+        <tr><td>Gringo</td><td>#f3e8d9</td><td style="color:#0a8f6a">#0a8f6a</td><td>Light, desert sand</td></tr>
+        <tr><td>Matrix</td><td>#050b06</td><td style="color:#00ff66">#00ff66</td><td>Dark, digital retro</td></tr>
+      </tbody>
+    </table>
+
+    <h3>CSS Variables</h3>
+    <pre><code>--bg          Background
+--panel       Panel/sidebar background
+--panel2      Elevated surface (cards, modals)
+--text        Primary text
+--muted       Secondary text, labels
+--border      Border color (used at low opacity)
+--focus       Accent/interactive color
+--accentBg    Filled button background
+--accentText  Text on accent background
+--icon-filter invert(1) for dark themes</code></pre>
+
+    <h3>Adding a New Theme</h3>
+    <pre><code>html[data-theme="mytheme"] {
+  --bg: #...; --panel: #...; --panel2: #...;
+  --text: #...; --muted: #...; --border: #...;
+  --focus: #...; --accentBg: #...; --accentText: #...;
+  --icon-filter: none|invert(1);
+}</code></pre>
+  `;
+}
+
+function renderKBAgents() {
+  document.getElementById("kb-content").innerHTML = `
+    <h2>Agents System</h2>
+
+    <h3>Architecture</h3>
+    <p>Agents are managed by a separate server (port 3009) with REST CRUD endpoints. The UI communicates via <code>agentsClient.js</code>. Agent data is loaded into the <code>AGENTS</code> array (exported from <code>agents.js</code>) at runtime.</p>
+
+    <h3>Agent Object Shape</h3>
+    <pre><code>{
+  id: "agent_xxx",
+  name: "Research Analyst",
+  initials: "RA",
+  avatar: null,               // Optional URL
+  descriptor: "Analyzes data",
+  description: "Long description...",
+  classification: "analyst",  // observer|analyst|orchestrator|operator|archivist
+  worksWith: ["agent_yyy"],   // Collaborator IDs
+  requestedCapabilities: {
+    models: ["GPT-4"],
+    data: ["documents"],
+    workflows: [{ name: "Research", sensitivity: "standard" }],
+    tools: ["search", "summarize"]
+  },
+  memory: { mode: "session" },
+  behavior: { tone: "professional" },
+  tags: ["research"]
+}</code></pre>
+
+    <h3>Agent Nodes in Flows</h3>
+    <p>Agent nodes are created by dragging from the inspector's Agents tab. They use the <code>createAgentNode()</code> factory and store <code>agentId</code> for reference. Recursion is prevented by <code>wouldCreateAgentCycle()</code>.</p>
+
+    <h3>Flow-Agent Association</h3>
+    <p>Each flow has an <code>agents[]</code> array containing agent IDs. This is used for the cycle detection system and for displaying agent assignments in the Library tab.</p>
+  `;
+}
+
+function renderKBConventions() {
+  document.getElementById("kb-content").innerHTML = `
+    <h2>Conventions</h2>
+
+    <h3>Naming</h3>
+    <table class="kb-table">
+      <thead><tr><th>Context</th><th>Convention</th><th>Example</th></tr></thead>
+      <tbody>
+        <tr><td>Files</td><td>camelCase</td><td><code>dragCreate.js</code>, <code>nodeView.js</code></td></tr>
+        <tr><td>Functions</td><td>camelCase</td><td><code>renderLibraryTab()</code>, <code>getNodeSize()</code></td></tr>
+        <tr><td>Constants</td><td>UPPER_SNAKE</td><td><code>NODE_CATEGORIES</code>, <code>ACTION_TYPE</code></td></tr>
+        <tr><td>CSS classes</td><td>kebab-case, BEM-lite</td><td><code>.library-tab-item</code>, <code>.badge-critical</code></td></tr>
+        <tr><td>IDs</td><td>prefix_uuid</td><td><code>node_abc123</code>, <code>flow_def456</code></td></tr>
+      </tbody>
+    </table>
+
+    <h3>CSS Organization</h3>
+    <p>All styles live in <code>src/app.css</code> (~16k lines). Sections are marked with comment headers. New components follow existing <code>.library-tab-*</code> or <code>.agents-tab-*</code> patterns with consistent use of <code>color-mix()</code> for opacity and theme-aware colors.</p>
+
+    <h3>State Management Rules</h3>
+    <pre><code>1. Never mutate state directly \u2014 always dispatch actions
+2. Reducer returns new state objects (shallow immutability)
+3. Side effects (file save) happen after reduce
+4. UI re-renders from state via renderEditor()
+5. No component-level state \u2014 module-level let variables are used for UI state</code></pre>
+
+    <h3>Import Style</h3>
+    <pre><code>// Named imports from local modules
+import { ActionType } from "../state/actions.js";
+import { loadFlow, saveFlow } from "../storage/flows.js";
+
+// Full .js extensions required (no bundler)
+// Relative paths from the importing file</code></pre>
+  `;
+}
+
+// === ROADMAP ===
+function renderRoadmap() {
+  const cols = ["open", "progress", "review", "done"];
+  const labels = { open: "Backlog", progress: "In Progress", review: "In Review", done: "Completed" };
+
+  const grouped = {};
+  cols.forEach(c => grouped[c] = []);
+  DATA.tickets.forEach(t => {
+    if (grouped[t.status]) grouped[t.status].push(t);
+  });
+
+  // Sort each column by priority
+  const pw = { critical: 0, high: 1, medium: 2, low: 3 };
+  cols.forEach(c => grouped[c].sort((a, b) => pw[a.priority] - pw[b.priority]));
+
+  document.getElementById("page-roadmap").innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+      <div class="page-title">Roadmap</div>
+      <button class="btn btn-primary" onclick="openNewTicketModal()">+ New Ticket</button>
+    </div>
+    <div class="page-subtitle">Kanban board view of all work items</div>
+
+    <div class="roadmap-cols">
+      ${cols.map(col => `
+        <div class="roadmap-col">
+          <div class="roadmap-col-header">
+            ${labels[col]}
+            <span class="roadmap-count">${grouped[col].length}</span>
+          </div>
+          <div class="roadmap-cards" data-status="${col}">
+            ${grouped[col].length === 0 ? `<div class="empty-state" style="padding:24px 12px"><div class="empty-state-sub">No items</div></div>` :
+              grouped[col].map(t => `
+                <div class="roadmap-card" onclick="openTicketDetail('${t.id}')">
+                  <div class="roadmap-card-title">${esc(t.title)}</div>
+                  <div class="roadmap-card-meta">
+                    <span class="badge badge-${t.type}" style="font-size:9px">${esc(t.type)}</span>
+                    <span class="badge badge-${t.priority}" style="font-size:9px">${esc(t.priority)}</span>
+                    ${t.area ? `<span class="badge badge-area" style="font-size:9px">${esc(getAreaLabel(t.area))}</span>` : ""}
+                    ${t.assignee ? `<span style="font-size:10px;color:var(--muted);margin-left:auto">${esc(t.assignee)}</span>` : ""}
+                  </div>
+                </div>
+              `).join("")}
+          </div>
+        </div>
+      `).join("")}
+    </div>
+  `;
+}
+
+// --- Boot: load data from server, migrate localStorage, render ---
+(async function boot() {
+  // Attempt migration first
+  await migrateLocalStorage();
+
+  // Load data from server
+  DATA = await loadDataFromServer();
+
+  // Load and apply theme
+  const settings = await loadSettingsFromServer();
+  document.documentElement.setAttribute("data-theme", settings.theme || "marshmallow");
+  themeSelect.value = settings.theme || "marshmallow";
+
+  // Initial render
+  renderDashboard();
+})();
+</script>
+</body>
+</html>

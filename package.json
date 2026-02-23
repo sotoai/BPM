@@ -1,0 +1,11 @@
+{
+  "name": "bentobase-project-portal",
+  "version": "1.0.0",
+  "description": "BentoBase Project Management Portal — file-backed tracking for development",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  }
+}

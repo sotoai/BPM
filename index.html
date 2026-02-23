@@ -843,8 +843,22 @@ html, body {
   cursor: pointer;
   background: var(--panel2);
   margin-bottom: 8px;
+  transform-style: preserve-3d;
+  will-change: transform;
+  transition: transform 300ms ease, box-shadow 300ms ease;
+}
+.nf-hero-banner:hover {
+  box-shadow: 0 12px 40px rgba(0,0,0,0.15);
 }
 .nf-hero-banner:hover .nf-hero-img { transform: scale(1.02); }
+.nf-hero-banner .nf-shine {
+  background: radial-gradient(
+    circle 200px at var(--shine-x, 50%) var(--shine-y, 50%),
+    rgba(255,255,255,0.18) 0%,
+    rgba(255,255,255,0.05) 40%,
+    transparent 65%
+  );
+}
 .nf-hero-img {
   width: 100%;
   height: 100%;
@@ -983,6 +997,26 @@ html, body {
 .nf-card:hover {
   box-shadow: 0 6px 20px rgba(0,0,0,0.12);
 }
+
+/* Apple TV specular highlight overlay */
+.nf-shine {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 5;
+  opacity: 0;
+  transition: opacity 300ms ease;
+  background: radial-gradient(
+    circle 120px at var(--shine-x, 50%) var(--shine-y, 50%),
+    rgba(255,255,255,0.22) 0%,
+    rgba(255,255,255,0.06) 40%,
+    transparent 70%
+  );
+  mix-blend-mode: overlay;
+}
+.nf-card:hover .nf-shine,
+.nf-hero-banner:hover .nf-shine { opacity: 1; }
 
 .nf-card-image {
   width: 100%;
@@ -2822,6 +2856,7 @@ function renderNfCard(t) {
         </div>
         ${t.area ? `<div class="nf-card-area">${esc(getAreaLabel(t.area))}${t.subarea ? ` › ${esc(t.subarea)}` : ""}</div>` : ""}
       </div>
+      <div class="nf-shine"></div>
     </div>`;
 }
 
@@ -2847,6 +2882,7 @@ function renderNfHeroBanner(t) {
           ${t.area ? `<span class="badge badge-area">${esc(getAreaLabel(t.area))}</span>` : ""}
         </div>
       </div>
+      <div class="nf-shine"></div>
     </div>`;
 }
 
@@ -4522,10 +4558,11 @@ function initRoadmapTilt() {
   });
 }
 
-// --- Tracker 3D tilt (Netflix card hover) ---
+// --- Tracker 3D tilt + Apple TV specular highlight ---
 function initTrackerTilt() {
+  // Small cards
   const cards = document.querySelectorAll(".nf-card");
-  const MAX_TILT = 4;
+  const CARD_TILT = 4;
 
   cards.forEach(card => {
     card.addEventListener("mousemove", e => {
@@ -4534,15 +4571,44 @@ function initTrackerTilt() {
       const y = e.clientY - rect.top;
       const centerX = rect.width / 2;
       const centerY = rect.height / 2;
-      const rotateY = ((x - centerX) / centerX) * MAX_TILT;
-      const rotateX = ((centerY - y) / centerY) * MAX_TILT;
+      const rotateY = ((x - centerX) / centerX) * CARD_TILT;
+      const rotateX = ((centerY - y) / centerY) * CARD_TILT;
       card.style.transform = `perspective(600px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.03)`;
+      // Drive specular highlight position
+      const pctX = ((x / rect.width) * 100).toFixed(1);
+      const pctY = ((y / rect.height) * 100).toFixed(1);
+      card.style.setProperty("--shine-x", pctX + "%");
+      card.style.setProperty("--shine-y", pctY + "%");
     });
 
     card.addEventListener("mouseleave", () => {
       card.style.transform = "";
     });
   });
+
+  // Hero banner
+  const hero = document.querySelector(".nf-hero-banner");
+  if (hero) {
+    const HERO_TILT = 2; // subtler tilt for the large banner
+    hero.addEventListener("mousemove", e => {
+      const rect = hero.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      const centerX = rect.width / 2;
+      const centerY = rect.height / 2;
+      const rotateY = ((x - centerX) / centerX) * HERO_TILT;
+      const rotateX = ((centerY - y) / centerY) * HERO_TILT;
+      hero.style.transform = `perspective(1200px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+      const pctX = ((x / rect.width) * 100).toFixed(1);
+      const pctY = ((y / rect.height) * 100).toFixed(1);
+      hero.style.setProperty("--shine-x", pctX + "%");
+      hero.style.setProperty("--shine-y", pctY + "%");
+    });
+
+    hero.addEventListener("mouseleave", () => {
+      hero.style.transform = "";
+    });
+  }
 }
 
 // --- Boot: load data from server, migrate localStorage, render ---
